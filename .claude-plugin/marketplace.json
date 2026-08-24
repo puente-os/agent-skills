@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "skills",
+  "owner": {
+    "name": "Puente OS"
+  },
+  "metadata": {
+    "description": "Official public Puente OS plugin marketplace"
+  },
+  "plugins": [
+    {
+      "name": "puente-os",
+      "source": "./",
+      "description": "Public skills for Puente Studio applications and workflows."
+    }
+  ]
+}

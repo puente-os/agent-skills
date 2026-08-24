@@ -1,0 +1,4 @@
+interface:
+  display_name: "Puente Studio"
+  short_description: "Build and manage Puente Studio applications"
+  default_prompt: "Use $puente-studio to work safely with Puente Studio applications."
