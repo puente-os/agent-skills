@@ -18,7 +18,7 @@ The initial public skills were migrated from [`octaviofv/puente_studio_repo`](ht
 Run these commands inside Claude Code:
 
 ```text
-/plugin marketplace add Puente-OS/agent-skills
+/plugin marketplace add puente-os/agent-skills
 /plugin install puente-os@skills
 ```
 
@@ -27,7 +27,7 @@ To receive a new release after the plugin version is bumped, update the marketpl
 ## Install with Codex
 
 ```bash
-codex plugin marketplace add Puente-OS/agent-skills
+codex plugin marketplace add puente-os/agent-skills
 codex plugin add puente-os@skills
 ```
 

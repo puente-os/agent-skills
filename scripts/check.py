@@ -17,6 +17,12 @@ CODEX_MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 CLAUDE_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
 SKILLS_DIR = ROOT / "skills"
 EXPECTED_SKILLS = {"manage-puente-workflows", "puente-studio"}
+CASE_SENSITIVE_FILES = (
+    CODEX_MARKETPLACE,
+    CODEX_MANIFEST,
+    CLAUDE_MANIFEST,
+    ROOT / "README.md",
+)
 
 
 def load_json(path: Path) -> dict:
@@ -33,6 +39,10 @@ def validate() -> list[str]:
         if path.exists():
             errors.append(f"Remove legacy duplicated skill directory: {path.relative_to(ROOT)}")
 
+    for path in CASE_SENSITIVE_FILES:
+        if "Puente-OS" in path.read_text(encoding="utf-8"):
+            errors.append(f"{path.relative_to(ROOT)} must use the canonical owner 'puente-os'")
+
     try:
         codex_marketplace = load_json(CODEX_MARKETPLACE)
         claude_marketplace = load_json(CLAUDE_MARKETPLACE)
@@ -43,7 +53,7 @@ def validate() -> list[str]:
 
     plugin_name = "puente-os"
     marketplace_name = "skills"
-    repository_url = "https://github.com/Puente-OS/agent-skills"
+    repository_url = "https://github.com/puente-os/agent-skills"
 
     for client, manifest in (("Codex", codex_manifest), ("Claude", claude_manifest)):
         if manifest.get("name") != plugin_name:
