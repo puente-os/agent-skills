@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Puente Workflows"
+  short_description: "Manage workflows, integrations, Gmail, and Google Sheets"
+  default_prompt: "Use $manage-puente-workflows to safely manage Puente workflow definitions and integration connections, including Gmail and Google Sheets."

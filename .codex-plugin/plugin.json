@@ -1,0 +1,33 @@
+{
+  "name": "puente-os",
+  "version": "1.0.0",
+  "description": "Public skills for Puente Studio applications and workflows.",
+  "author": {
+    "name": "Puente OS",
+    "url": "https://puente.xyz"
+  },
+  "homepage": "https://puente.xyz",
+  "repository": "https://github.com/Puente-OS/agent-skills",
+  "keywords": [
+    "puente",
+    "studio",
+    "workflows",
+    "automation"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Puente OS",
+    "shortDescription": "Build Puente Studio apps and workflows",
+    "longDescription": "Install public Puente OS skills for building Studio applications and managing workflows and integrations.",
+    "developerName": "Puente OS",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "websiteURL": "https://puente.xyz",
+    "defaultPrompt": [
+      "Ayúdame a construir una aplicación con Puente Studio.",
+      "Ayúdame a administrar un workflow de Puente."
+    ]
+  }
+}

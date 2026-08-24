@@ -1,0 +1,17 @@
+{
+  "name": "puente-os",
+  "version": "1.0.0",
+  "description": "Public skills for Puente Studio applications and workflows.",
+  "author": {
+    "name": "Puente OS",
+    "url": "https://puente.xyz"
+  },
+  "homepage": "https://puente.xyz",
+  "repository": "https://github.com/Puente-OS/agent-skills",
+  "keywords": [
+    "puente",
+    "studio",
+    "workflows",
+    "automation"
+  ]
+}
