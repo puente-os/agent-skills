@@ -16,7 +16,7 @@ CLAUDE_MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 CODEX_MANIFEST = ROOT / ".codex-plugin" / "plugin.json"
 CLAUDE_MANIFEST = ROOT / ".claude-plugin" / "plugin.json"
 SKILLS_DIR = ROOT / "skills"
-EXPECTED_SKILLS = {"manage-puente-workflows", "puente-studio"}
+EXPECTED_SKILLS = {"manage-puente-projects", "manage-puente-workflows", "puente-studio"}
 CASE_SENSITIVE_FILES = (
     CODEX_MARKETPLACE,
     CODEX_MANIFEST,

@@ -10,6 +10,7 @@ The single `skills/` directory is canonical. Do not create mirrored `.agents/ski
 |---|---|
 | `puente-studio` | Build and manage Puente Studio applications, artifacts, tables, and publication workflows. |
 | `manage-puente-workflows` | Manage workflow definitions, integrations, Gmail, and Google Sheets. |
+| `manage-puente-projects` | Organize apps, tables, workflows, and agents into projects with Kanban task boards. |
 
 The initial public skills were migrated from [`octaviofv/puente_studio_repo`](https://github.com/octaviofv/puente_studio_repo) at commit [`0291073`](https://github.com/octaviofv/puente_studio_repo/commit/0291073da18fabac93ead97a33354d6e779c89be). Future marketplace changes should be made in this repository's canonical `skills/` tree.
 
