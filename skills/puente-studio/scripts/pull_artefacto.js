@@ -87,9 +87,13 @@ function fetchJSON(url, apiKey) {
             },
         };
         const req = lib.request(options, res => {
-            let body = '';
-            res.on('data', chunk => (body += chunk));
+            // Acumular Buffers y decodificar una sola vez al final: concatenar
+            // chunk por chunk rompe los caracteres UTF-8 multi-byte que caen
+            // justo en el borde entre dos chunks (quedan como U+FFFD).
+            const chunks = [];
+            res.on('data', chunk => chunks.push(chunk));
             res.on('end', () => {
+                const body = Buffer.concat(chunks).toString('utf-8');
                 try {
                     resolve({ status: res.statusCode, data: JSON.parse(body) });
                 } catch {
