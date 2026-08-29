@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Puente Projects"
+  short_description: "Organize apps, tables, workflows and agents into projects with Kanban tasks"
+  default_prompt: "Use $manage-puente-projects to organize the Puente workspace into projects and manage their task boards."

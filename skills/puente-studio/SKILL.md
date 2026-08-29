@@ -107,6 +107,9 @@ Nunca uses la `STUDIO_KEY` dentro del código de una app publicada — es una cr
 - **Actualizar** una fila existente por su `fila_id`
 - **Insertar en masa** hasta 10 000 filas en una sola operación
 
+### Proyectos y tareas (otra skill)
+Los proyectos son las carpetas que agrupan apps, tablas, workflows y agentes, y cada uno lleva un tablero Kanban de tareas. **No se gestionan desde aquí:** carga la skill `manage-puente-projects` cuando el usuario quiera organizar el workspace en carpetas, agrupar componentes, o crear y mover tareas. Sus endpoints cuelgan de `/proyectos`, no de `/studio`.
+
 ---
 
 ## ¿Qué es un `artefacto` de Puente?
