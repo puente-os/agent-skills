@@ -1,15 +1,21 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail or Google Sheets connections and nodes, reuse or authorize an integration account, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail or Google Sheets connections and nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
 
 Manage saved workflow definitions for the team attached to the configured Studio credential. Do not directly call workflow execution, trigger, webhook, schedule, or deletion endpoints. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
 
+## Diagnose a workflow error
+
+For a failed or stuck workflow, read [references/troubleshooting.md](references/troubleshooting.md), then the matching entry in [references/errors.md](references/errors.md). Explain the message, likely cause, user action, and retry conditions. Distinguish API responses and saved step errors from internal log messages.
+
+Interpret supplied error details without credentials. Load configuration only when a supported definition or integration request is necessary. A Studio key does not grant access to the JWT-protected execution-detail route. Do not call execution routes or rerun workflows through this skill.
+
 ## Read configuration
 
-Use already-exported `BASE_URL` and `STUDIO_KEY` values or read them from the current project's ignored `.env` file. Never read configuration from the installed marketplace or plugin-cache directory. Stop if either value is missing or still contains a placeholder.
+For supported API requests, use already-exported `BASE_URL` and `STUDIO_KEY` values or read them from the current project's ignored `.env` file. Never read configuration from the installed marketplace or plugin-cache directory. Stop the API operation if either value is missing or still contains a placeholder. You can still explain supplied error details.
 
 Authenticate every request with:
 
