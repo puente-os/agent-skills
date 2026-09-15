@@ -13,7 +13,7 @@ the user's run.
 | Execution time | `ExecutionTimeout`, `PythonExecutionTimeout` |
 | Workflow code | Custom Python exceptions, including `RuntimeError` |
 | Configuration | `NodeNotFound`, `NoCodeAvailable` |
-| Integrations | `IntegrationRuntimeUnavailable`, `IntegrationActionFailed` |
+| Integrations | `IntegrationRuntimeUnavailable`, `IntegrationActionFailed`, `invalid_range` |
 | Infrastructure | E2B health check warnings, `E2B_InfrastructureError`, `E2B_SDKError` |
 | Internal coordination | `step_has_active_owner`, `step_ownership_lost`, `execution_not_active` |
 
@@ -95,10 +95,46 @@ explicit error message for a numeric limit; a merged change may not be deployed.
 
 ### `IntegrationActionFailed`
 
-- **Meaning:** An integration action failed unexpectedly at the runtime boundary.
-- **Where it appears:** A step error with value `integration_unavailable`. Internal provider details are intentionally hidden on this path.
-- **Fix:** Contact Puente with the execution ID, node, and time. Use a specific provider error instead when one is available.
+- **Meaning:** An integration action failed. Use `value` to identify the error; the name alone does not establish the cause.
+- **Where it appears:** A public node response or execution-status step error. `value` is the stable machine-readable code. The optional `message` field gives human-readable guidance.
+- **Fix:** For `invalid_range`, use the Google Sheets entry below. For the generic `integration_unavailable` fallback, contact Puente with the execution ID, node, and time. This fallback hides internal provider details.
 - **Retry:** Check whether the provider already completed the action. Do not assume that a failed response means an email or write did not occur.
+
+### `invalid_range` (Google Sheets)
+
+- **Meaning:** Google Sheets could not parse the requested tab or cell range. This does not prove that the integration is unavailable.
+- **Where it appears:** `IntegrationActionFailed` with `value: "invalid_range"`. The backend preserves the optional `message` through the integration runtime, public node response, and execution-status step model.
+- **Causes:** An incorrect tab title or invalid range syntax. A missing tab is one possible cause, not the only cause.
+- **Fix:** Check the exact tab title and cell/A1 range. Use the [Google Sheets procedure](troubleshooting.md#check-a-google-sheets-invalid_range-error).
+- **Retry:** Correct the input first. Check completed steps and external writes before a separately authorized retry. Do not reconnect OAuth or retry unchanged inputs as the first fix.
+- **Contact Puente:** The error persists after the tab title and range are checked. Supply the error code, safe message, execution ID, and failed step.
+
+Example public error:
+
+```json
+{
+  "name": "IntegrationActionFailed",
+  "value": "invalid_range",
+  "message": "Unable to parse range: Sheet1. Check the tab name and cell range.",
+  "traceback": null
+}
+```
+
+The backend recognizes this error only when all these conditions match:
+
+- The HTTP status is `400`.
+- The Google error code is numeric `400`, and its status is `INVALID_ARGUMENT`.
+- The provider message is printable and contains 23 to 1,024 characters.
+- The message starts with the exact prefix `Unable to parse range: ` and has a nonempty range after it.
+
+A range that contains only spaces does not qualify. Unrelated HTTP 400 responses,
+malformed payloads, other statuses, and unread response bodies retain the safe
+`integration_unavailable` fallback. Do not classify every HTTP 400 as `invalid_range`.
+
+Public diagnostics exclude credentials, headers, complete provider bodies, and
+internal traces. Frontend display of `message` is a separate concern; this
+contract does not prove a visible UI fix. Failure notification code still reads
+`value`.
 
 ## Infrastructure
 
