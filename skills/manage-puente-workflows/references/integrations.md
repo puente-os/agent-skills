@@ -22,6 +22,7 @@ provider's reference for its endpoints, verification rules, and node contracts.
 |---|---|---|---|---|
 | Gmail | `gmail.*` | `gmail` | Public status is `active` | [gmail.md](gmail.md) |
 | Google Sheets | `google_sheets.*` | `google-sheets` | Public status is `active`, then spreadsheet access succeeds | [google-sheets.md](google-sheets.md) |
+| Google Drive | `google_drive.*` | `google-drive` | Verification returns public status `active`; browse the intended resource to check access | [google-drive.md](google-drive.md) |
 
 Do not infer a connection provider or route from an action prefix. A provider
 must be documented here and in its provider reference before this skill uses
