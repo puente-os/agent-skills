@@ -1,6 +1,6 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail or Google Sheets connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, or Google Drive connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
@@ -29,7 +29,7 @@ Never print the key, place it in a URL, write it into generated source code, or 
 
 Read [references/api.md](references/api.md) before preparing a workflow-definition request. Read [references/nodes.md](references/nodes.md) before creating or changing `nodes`, `edges`, node inputs, or cross-node references. Read [references/expressions.md](references/expressions.md) before writing a date, time, or unique ID into a node input, or when a save or activation returns expression codes.
 
-For any connection-backed integration, first read [references/integrations.md](references/integrations.md). Then read only the selected provider reference: [references/gmail.md](references/gmail.md) for Gmail or [references/google-sheets.md](references/google-sheets.md) for Google Sheets. Do not load every provider reference when only one integration is involved. Use only the public HTTP methods and paths documented in those references.
+For any connection-backed integration, first read [references/integrations.md](references/integrations.md). Then read only the selected provider reference: [references/gmail.md](references/gmail.md) for Gmail, [references/google-sheets.md](references/google-sheets.md) for Google Sheets, or [references/google-drive.md](references/google-drive.md) for Google Drive. Do not load every provider reference when only one integration is involved. Use only the public HTTP methods and paths documented in those references.
 
 ## Choose an operation
 
@@ -41,6 +41,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - List or select integration connections: use [references/integrations.md](references/integrations.md), then the selected provider reference.
 - Connect Gmail or build a Gmail node: read [references/integrations.md](references/integrations.md), then [references/gmail.md](references/gmail.md).
 - Connect Google Sheets or build a Sheets node: read [references/integrations.md](references/integrations.md), then [references/google-sheets.md](references/google-sheets.md).
+- Connect Google Drive, select a file or folder, or build a Drive node: read [references/integrations.md](references/integrations.md), then [references/google-drive.md](references/google-drive.md).
 - Create a workflow: call `POST /workflows/` with a complete JSON definition and acknowledged automatic service effects.
 - Update a definition: call `POST /workflows/` with the stable `scenario_group_id`, a complete JSON definition, and acknowledged automatic service effects.
 - Change saved status: call `PUT /workflows/{scenario_id}/status` with the latest version `id` (`is_latest=true`); an older version returns `409`. Activating requires separate explicit confirmation.
