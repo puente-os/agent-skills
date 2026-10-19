@@ -1,6 +1,6 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, or Google Drive connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, or Outlook connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
@@ -29,7 +29,7 @@ Never print the key, place it in a URL, write it into generated source code, or 
 
 Read [references/api.md](references/api.md) before preparing a workflow-definition request. Read [references/nodes.md](references/nodes.md) before creating or changing `nodes`, `edges`, node inputs, or cross-node references. Read [references/expressions.md](references/expressions.md) before writing a date, time, or unique ID into a node input, or when a save or activation returns expression codes.
 
-For any connection-backed integration, first read [references/integrations.md](references/integrations.md). Then read only the selected provider reference: [references/gmail.md](references/gmail.md) for Gmail, [references/google-sheets.md](references/google-sheets.md) for Google Sheets, or [references/google-drive.md](references/google-drive.md) for Google Drive. Do not load every provider reference when only one integration is involved. Use only the public HTTP methods and paths documented in those references.
+For any connection-backed integration, first read [references/integrations.md](references/integrations.md). Then read only the selected provider reference: [references/gmail.md](references/gmail.md) for Gmail, [references/google-sheets.md](references/google-sheets.md) for Google Sheets, [references/google-drive.md](references/google-drive.md) for Google Drive, or [references/outlook.md](references/outlook.md) for Outlook. Do not load every provider reference when only one integration is involved. Use only the public HTTP methods and paths documented in those references.
 
 ## Choose an operation
 
@@ -42,6 +42,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Connect Gmail or build a Gmail node: read [references/integrations.md](references/integrations.md), then [references/gmail.md](references/gmail.md).
 - Connect Google Sheets or build a Sheets node: read [references/integrations.md](references/integrations.md), then [references/google-sheets.md](references/google-sheets.md).
 - Connect Google Drive, select a file or folder, or build a Drive node: read [references/integrations.md](references/integrations.md), then [references/google-drive.md](references/google-drive.md).
+- Connect Outlook or build mail, draft, attachment, or new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
 - Create a workflow: call `POST /workflows/` with a complete JSON definition and acknowledged automatic service effects.
 - Update a definition: call `POST /workflows/` with the stable `scenario_group_id`, a complete JSON definition, and acknowledged automatic service effects.
 - Change saved status: call `PUT /workflows/{scenario_id}/status` with the latest version `id` (`is_latest=true`); an older version returns `409`. Activating requires separate explicit confirmation.
@@ -53,7 +54,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 2. Validate every `node_id` through `GET /workflows/integrations`; never invent node types. When the request involves node-level code, inspect `GET /openapi.json` too: `script_code` is a persisted `WorkflowNode` field, not an integration `inputs` field.
 3. Preserve the complete `nodes` and `edges` arrays when creating a new version.
 4. Default new definitions and versions to `draft` unless the user explicitly requests another saved status.
-5. Explain that `POST /workflows/` automatically generates or inherits Puente synchronous-webhook metadata. This can expose a fixed Puente webhook endpoint even while the workflow remains a draft. Saving an active definition with a `trigger.schedule` node also creates or updates its schedule.
+5. Explain that `POST /workflows/` automatically generates or inherits Puente synchronous-webhook metadata. This can expose a fixed Puente webhook endpoint even while the workflow remains a draft. Saving an active definition with a `trigger.schedule` node also creates or updates its schedule. Saving an `outlook.new_email` node can create or renew a Microsoft subscription even in draft; read [references/outlook.md](references/outlook.md).
 6. Obtain explicit user confirmation of those effects before sending a create/version request.
 7. If any create/version payload uses `status: "active"`, obtain separate explicit confirmation of activation.
 8. Show the intended HTTP method, path, and JSON body without sending it when the requested change is ambiguous or needs confirmation.
@@ -111,6 +112,7 @@ Do not directly call workflow execution, trigger, webhook, cron, schedule, or ru
 Definition management can still change runtime eligibility:
 
 - Creating or versioning causes the automatic webhook and metadata behavior described above.
+- Saving an `outlook.new_email` definition can create or renew a Microsoft subscription even in draft. Activating it enables automatic execution for new Inbox mail; see [references/outlook.md](references/outlook.md).
 - Saving `status: "active"` does not execute immediately, but it enables existing external triggers or synchronous webhooks to execute that workflow. Saving or activating a definition with a `trigger.schedule` node creates or updates its schedule; see the schedule rules in [references/api.md](references/api.md).
 
 Require explicit user confirmation for every transition or create/version payload that saves an active status. Never describe activation as inert metadata.
