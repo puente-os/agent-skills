@@ -24,6 +24,8 @@ provider's reference for its endpoints, verification rules, and node contracts.
 | Google Sheets | `google_sheets.*` | `google-sheets` | Public status is `active`, then spreadsheet access succeeds | [google-sheets.md](google-sheets.md) |
 | Google Drive | `google_drive.*` | `google-drive` | Verification returns public status `active`; browse the intended resource to check access | [google-drive.md](google-drive.md) |
 | Google Calendar | `google_calendar.*` | `google-calendar` | Primary-calendar verification returns public status `active`; check access to the intended calendar separately | [google-calendar.md](google-calendar.md) |
+| Google Analytics (GA4) | `google_analytics.*` | `google-analytics` | Account verification returns public status `active`; property access remains separate | [google-analytics.md](google-analytics.md) |
+| Google Docs | `google_docs.*` | `google-docs` | Account verification returns public status `active`; document access remains separate | [google-docs.md](google-docs.md) |
 | Outlook | `outlook.*` | `outlook` | Inbox verification returns public status `active` | [outlook.md](outlook.md) |
 
 Do not infer a connection provider or route from an action prefix. A provider
