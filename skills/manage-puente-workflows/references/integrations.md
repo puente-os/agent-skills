@@ -23,6 +23,7 @@ provider's reference for its endpoints, verification rules, and node contracts.
 | Gmail | `gmail.*` | `gmail` | Public status is `active` | [gmail.md](gmail.md) |
 | Google Sheets | `google_sheets.*` | `google-sheets` | Public status is `active`, then spreadsheet access succeeds | [google-sheets.md](google-sheets.md) |
 | Google Drive | `google_drive.*` | `google-drive` | Verification returns public status `active`; browse the intended resource to check access | [google-drive.md](google-drive.md) |
+| Google Calendar | `google_calendar.*` | `google-calendar` | Primary-calendar verification returns public status `active`; check access to the intended calendar separately | [google-calendar.md](google-calendar.md) |
 | Outlook | `outlook.*` | `outlook` | Inbox verification returns public status `active` | [outlook.md](outlook.md) |
 
 Do not infer a connection provider or route from an action prefix. A provider
