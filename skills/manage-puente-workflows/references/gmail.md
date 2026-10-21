@@ -1,9 +1,10 @@
-# Gmail workflow actions
+# Gmail workflow actions and triggers
 
 ## Contents
 
 - Discover the live contract
 - Gmail connection behavior
+- New email trigger
 - Editor behavior
 - Shared input rules
 - Normalized message output
@@ -64,9 +65,58 @@ After link creation, return to the shared flow in [integrations.md](integrations
 A Gmail connection may report `needs_reauth` or `not_accessible`; do not present
 either state as ready. A requested disconnect succeeds with `204 No Content`.
 
+## New email trigger
+
+Use `gmail.new_email` only when both live catalogs expose it. It monitors new
+Inbox messages for the selected Gmail account. Its only input is a literal
+Puente connection UUID in `connection_id`; workflow references are not allowed.
+A definition can contain at most one Gmail New Email trigger. Do not add search,
+label, folder, polling interval, or Pub/Sub fields to its inputs.
+
+```json
+{
+  "label": "new_mail",
+  "node_id": "gmail.new_email",
+  "inputs": {
+    "connection_id": "11111111-1111-4111-8111-111111111111"
+  },
+  "on_error": "stop",
+  "index_position": null
+}
+```
+
+This is a node fragment. Use [api.md](api.md) and [nodes.md](nodes.md) for a
+complete definition and edges. At runtime the trigger places the normalized
+Gmail message under `message`. A downstream node can use
+`{{new_mail.message.message_id}}`, `{{new_mail.message.headers.subject}}`, or
+`{{new_mail.message.text_body}}`. Do not use `{{new_mail.message_id}}`.
+The OpenAPI output schema describes the normalized message; the workflow
+trigger context adds the `message` wrapper.
+
+Saving a definition with this trigger can initialize mailbox tracking and
+create or renew a Gmail watch, even in draft. Explain this provider-side effect
+before the parent skill's save confirmation. A draft does not enable workflow
+delivery. Obtain the parent's separate activation confirmation before saving
+`status: "active"`: new Inbox mail can then execute all downstream actions.
+Do not promise historical Inbox replay. Saving an inactive version stops new
+trigger delivery; it does not cancel executions that have already started.
+
+Puente manages the shared Pub/Sub infrastructure, account routing, Gmail watches,
+and renewal. Clients select and authorize their own Gmail connection; they do
+not configure a topic or subscription for each mailbox. Do not call internal
+trigger, webhook, watch, or execution routes, or request Nango or Google Cloud
+administrator credentials through this Studio skill.
+
+If saving returns `gmail_trigger_not_configured`, report that the target
+environment needs operator configuration. For `gmail_reconnect_required`,
+return to the normal connection flow. For `gmail_connection_not_accessible`,
+select a connection available to the current team. For
+`gmail_trigger_count_invalid` or `gmail_trigger_input_invalid`, correct the
+saved definition. Preserve the returned status and error code.
+
 ## Editor behavior
 
-The Puente workflow editor identifies `gmail.*` nodes as Gmail actions, presents a Gmail connection selector for `connection_id`, and renders the remaining controls from the selected action's current catalog `input_schema`. It does not maintain a second Gmail field list. An active selected connection is required before the editor offers standalone execution.
+The Puente workflow editor identifies `gmail.*` nodes as Gmail integrations, presents a Gmail connection selector for `connection_id`, and renders the remaining controls from the selected action's current catalog `input_schema`. It does not maintain a second Gmail field list. An active selected connection is required for mail actions. The New Email trigger does not permit standalone execution.
 
 Catalog fields with `type: "json"`, such as recipients and attachments, are saved as JSON arrays or objects when their entered value is valid JSON. A complete workflow reference is preserved for runtime resolution instead of being parsed as JSON. When an optional field is left blank and the catalog publishes a default, the editor saves that default; this turns untouched `cc`, `bcc`, and `attachments` into `[]` and `reply_to` into `null` for the current compose contract.
 
@@ -74,7 +124,7 @@ The editor also applies catalog presentation constraints such as dropdown option
 
 ## Shared input rules
 
-All five actions currently have `manual_execution_allowed: true`. Always rediscover this metadata before relying on it.
+The mail actions permit standalone execution when their live metadata sets `manual_execution_allowed: true`. The New Email trigger sets it to `false`. Always rediscover this metadata before relying on it.
 
 - `connection_id` is required, must be a non-empty string, and does not support workflow references.
 - A field whose editor metadata says `supports_references: true` may contain a complete workflow reference such as `{{find_mail_1.messages[0].message_id}}`. Use the context-key rules in [nodes.md](nodes.md).
