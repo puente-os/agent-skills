@@ -27,6 +27,7 @@ provider's reference for its endpoints, verification rules, and node contracts.
 | Google Analytics (GA4) | `google_analytics.*` | `google-analytics` | Account verification returns public status `active`; property access remains separate | [google-analytics.md](google-analytics.md) |
 | Google Ads | `google_ads.*` | `google-ads` | Account verification returns public status `active`; customer and campaign access remain separate | [google-ads.md](google-ads.md) |
 | Google Docs | `google_docs.*` | `google-docs` | Account verification returns public status `active`; document access remains separate | [google-docs.md](google-docs.md) |
+| Facebook Lead Ads | `facebook_lead_ads.new_lead` | `facebook-lead-ads` | `active`, then selected Page and Forms are accessible | [facebook-lead-ads.md](facebook-lead-ads.md) |
 | Outlook | `outlook.*` | `outlook` | Inbox verification returns public status `active` | [outlook.md](outlook.md) |
 
 Do not infer a connection provider or route from an action prefix. A provider
@@ -64,6 +65,11 @@ The documented connection list and read operations return public records with:
 Use only these public fields. Do not request or derive hidden provider data.
 
 ## Connection-first interaction
+
+For Facebook Lead Ads, first select a permitted Meta app as described in
+[facebook-lead-ads.md](facebook-lead-ads.md), then discover accounts for that
+app. Use its provider-specific routes and subscription rules. The shared
+connection read, verify, and disconnect routes below do not apply to Facebook.
 
 Before creating an authorization link:
 
