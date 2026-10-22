@@ -27,6 +27,7 @@ provider's reference for its endpoints, verification rules, and node contracts.
 | Google Analytics (GA4) | `google_analytics.*` | `google-analytics` | Account verification returns public status `active`; property access remains separate | [google-analytics.md](google-analytics.md) |
 | Google Ads | `google_ads.*` | `google-ads` | Account verification returns public status `active`; customer and campaign access remain separate | [google-ads.md](google-ads.md) |
 | Google Docs | `google_docs.*` | `google-docs` | Account verification returns public status `active`; document access remains separate | [google-docs.md](google-docs.md) |
+| Google BigQuery | `google_bigquery.*` | `google-bigquery` | Account verification returns public status `active`; dataset/table permissions remain separate | [google-bigquery.md](google-bigquery.md) |
 | Facebook Lead Ads | `facebook_lead_ads.new_lead` | `facebook-lead-ads` | `active`, then selected Page and Forms are accessible | [facebook-lead-ads.md](facebook-lead-ads.md) |
 | Outlook | `outlook.*` | `outlook` | Inbox verification returns public status `active` | [outlook.md](outlook.md) |
 
