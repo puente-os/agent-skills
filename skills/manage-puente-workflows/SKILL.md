@@ -1,17 +1,17 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
 
-Manage saved workflow definitions for the team attached to the configured Studio credential. Do not directly call workflow execution, trigger, webhook, schedule, or deletion endpoints. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
+Manage saved workflow definitions for the team attached to the configured Studio credential. Do not run, trigger, or resume workflows, and do not call webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
 
 ## Diagnose a workflow error
 
 For a failed or stuck workflow, read [references/troubleshooting.md](references/troubleshooting.md), then the matching entry in [references/errors.md](references/errors.md). Explain the message, likely cause, user action, and retry conditions. Distinguish API responses and saved step errors from internal log messages.
 
-Interpret supplied error details without credentials. Load configuration only when a supported definition or integration request is necessary. A Studio key does not grant access to the JWT-protected execution-detail route. Do not call execution routes or rerun workflows through this skill.
+When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Never rerun, resume, or retrigger a workflow through this skill.
 
 ## Read configuration
 
@@ -35,6 +35,8 @@ For any connection-backed integration, first read [references/integrations.md](r
 
 - List saved workflows: call `GET /workflows/`.
 - Inspect a version or stable group: call `GET /workflows/?all_versions=true` and filter the returned definitions by `id` or `scenario_group_id`.
+- List a workflow's recent executions: call `GET /workflows/{scenario_id}/executions` with any version `id` of that workflow.
+- Read one execution's status, steps, errors, and logs: call `GET /workflows/executions/{execution_id}`.
 - Discover valid node types: call `GET /workflows/integrations`.
 - Write or fix a field formula (`now`, `today`, `format_date`, `uuid`): read [references/expressions.md](references/expressions.md), preview it with `POST /workflows/expressions/evaluate`, and list functions with `GET /workflows/functions`.
 - Build a Python or headless browser step: read [references/nodes.md](references/nodes.md), and [references/headless-browser.md](references/headless-browser.md) for a browser.
@@ -113,7 +115,7 @@ corresponding URL could not be derived instead of guessing.
 
 ## Distinguish management from execution
 
-Do not directly call workflow execution, trigger, webhook, cron, schedule, or run endpoints. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
+Do not directly call workflow execution, trigger, webhook, cron, schedule, or run endpoints. The two read-only execution history routes are the only execution routes this skill uses. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
 
 Definition management can still change runtime eligibility:
 

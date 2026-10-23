@@ -8,11 +8,12 @@
 - Payloads
 - Node definitions
 - Definition-management flows
+- Execution history
 - Errors and safety
 
 ## Scope
 
-Manage saved workflow definitions only. Never directly call workflow execution, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
+Manage saved workflow definitions and read their execution history. Never directly call workflow execution, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
 
 ## Configuration and authentication
 
@@ -37,6 +38,8 @@ Send `X-API-Key: <STUDIO_KEY>` on every request. The credential supplies the com
 | Create definition | `POST /workflows/` | Omit `scenario_group_id`; acknowledge automatic service effects. |
 | Create updated version | `POST /workflows/` | Include `scenario_group_id`, the complete definition, and acknowledged side effects. |
 | Change saved status | `PUT /workflows/{scenario_id}/status` | Use the latest version ID; activation requires explicit confirmation. |
+| List executions | `GET /workflows/{scenario_id}/executions` | Read-only; see Execution history. |
+| Read an execution | `GET /workflows/executions/{execution_id}` | Read-only; see Execution history. |
 
 No other workflow-definition action is part of this skill. Connection management is documented separately in [integrations.md](integrations.md); provider action contracts remain in [gmail.md](gmail.md) and [google-sheets.md](google-sheets.md).
 
@@ -227,11 +230,66 @@ Use the saved version `id` of the latest version (`is_latest=true`). Any other v
 
 Activation does not run the workflow immediately. It does make the workflow eligible for execution through existing external triggers or synchronous webhooks, and it creates or updates the schedule of a `trigger.schedule` workflow. Require separate explicit user confirmation before saving `active`, including when `active` appears in a create/version payload.
 
+## Execution history
+
+Both routes are read-only and accept the Studio credential. The credential sees
+only executions of workflows owned by its team. A workflow or execution from
+another team returns `404`, the same as a missing one.
+
+### List executions
+
+`GET /workflows/{scenario_id}/executions` accepts any saved version `id` of the
+workflow and returns executions of every version from the last 90 days, newest
+first.
+
+| Query parameter | Use |
+|---|---|
+| `limit` | 1 to 200; defaults to 50. |
+| `cursor` | The previous page's `next_cursor`. |
+| `include=messages` | Adds each execution's `input` and, as `outputs`, the results of its last three completed steps. |
+| `timezone` | IANA zone used for `totals.today`; defaults to `UTC`. |
+
+The response contains `executions`, `next_cursor` (`null` on the last page), and
+`totals` (`total`, `completed`, `failed`, `running`, `today`) on the first page
+only. Each execution has `execution_id`, `scenario_id`, `scenario_version`,
+`status`, `stopped_at`, `started_at`, `completed_at`, `total_steps`,
+`steps_completed`, `steps_failed`, and `first_step_label`. A preview has
+`value`, `bytes`, `truncated`, and `preview`. A value over 8 KiB has
+`value: null`, `truncated: true`, and its first 1,024 characters in `preview`.
+
+The list is a summary without step errors or logs. Use it to find the relevant
+execution, then read that execution. Request `include=messages` only when the
+input or output is needed for the diagnosis.
+
+### Read an execution
+
+`GET /workflows/executions/{execution_id}` returns the global `status`
+(`pending`, `running`, `completed`, or `failed`), `stopped_at`, `failure`
+(`source`, `node_label`, `step_index`, `error_type`, `message`, `http_status`)
+when available, `initial_variables`, timestamps, and `steps`. Each step has
+`step_index`, `label`, `node_id`, `status`, `result`, `logs` (`stdout`,
+`stderr`), `error` (`name`, `value`, `message`, `traceback`), and `iteration`
+for steps inside an iterator.
+
+The response is limited to 16 MiB. A value removed to fit appears in
+`truncated` with its `field`, `step_index`, `iteration_index`, and `bytes`.
+Read only the values you need again with `?step_index=<n>`, adding
+`&iteration_index=<n>` for one iterator item. `iteration_index` requires
+`step_index`.
+
+A full read of a legacy-engine execution that has been `running` for more than
+35 minutes marks it `failed` as stuck. This is server-side recovery, not a
+retry. Report it when it happens.
+
+Execution data can contain personal data or secrets received by the workflow.
+Quote only the excerpts that support the diagnosis. Never copy complete
+payloads, `initial_variables`, or logs into reports.
+
 ## Errors and safety
 
 - `401`: the Studio credential is missing, invalid, revoked, or not accepted.
 - `403`: the operation attempts a resource outside the credential's team.
-- `404`: the requested saved definition cannot be found through the available list data.
+- `404`: the requested saved definition cannot be found through the available list data, or the requested workflow or execution does not exist or belongs to another team.
 - `409`: `PUT /workflows/{scenario_id}/status` received a version that is not the latest. Deleting the current version of an active workflow with several versions also returns `409`; it must be deactivated first.
 - `422`: the payload shape is invalid, a schedule validation code applies (see Schedule triggers), or a field formula is invalid (see Field formula validation).
 
