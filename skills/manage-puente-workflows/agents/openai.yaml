@@ -1,4 +1,4 @@
 interface:
   display_name: "Manage Puente Workflows"
   short_description: "Manage workflows and troubleshoot workflow errors"
-  default_prompt: "Use $manage-puente-workflows to safely manage Puente workflow definitions and integration connections, or explain a workflow error and its recovery steps."
+  default_prompt: "Use $manage-puente-workflows to safely manage Puente workflow definitions and integration connections, or diagnose a workflow error from its execution history and explain the recovery steps."

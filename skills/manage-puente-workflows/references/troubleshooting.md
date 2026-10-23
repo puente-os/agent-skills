@@ -6,7 +6,10 @@ Do not require credentials to interpret a supplied message.
 
 ## Collect the minimum evidence
 
-Use information already supplied. Ask only for missing details that affect the diagnosis:
+Use information already supplied. When the Studio configuration is available,
+read the missing details from the execution history routes in
+[api.md](api.md#execution-history) instead of asking the user. Ask only for
+details that remain missing and affect the diagnosis:
 
 - Exact error message and HTTP status, if a request failed.
 - Stable workflow ID (`scenario_group_id`) and saved version ID when available.
@@ -38,11 +41,10 @@ in an interrupted response does not prove that the server rejected the request.
 - Failure alerts can contain a message and traceback excerpt. Absence of an alert does not prove success. Provider acceptance does not prove inbox delivery.
 - Internal ownership state and `launch_error_code` are not explicit fields in the execution-detail response. Do not promise access to them.
 
-The execution-detail route currently requires a user JWT and
-`resource:workflow:read`. This skill uses a Studio key for supported definition
-and integration operations. A Studio key does not grant access to that route.
-Do not request a user JWT or call execution routes through this skill.
-Interpret details supplied by the user instead.
+The Studio key can read the history list and the execution detail of its
+team's workflows. Follow [api.md](api.md#execution-history). Never request a
+user JWT. Without the Studio configuration, interpret the details the user
+supplies.
 
 Do not assume the user has Datadog, production database, Resend, or Upstash
 credentials. Never present an internal console operation as an available
@@ -58,8 +60,8 @@ Use this procedure for `IntegrationActionFailed` with `value: "invalid_range"`.
 Read the [error contract](errors.md#invalid_range-google-sheets) for the exact
 detection rules. The code identifies a tab/range problem, not an OAuth failure.
 
-Use only available, authorized read-only tools for inspection. This skill does
-not grant access to execution routes or undocumented spreadsheet metadata routes.
+Use only available, authorized read-only tools for inspection. This skill can
+read execution history but not undocumented spreadsheet metadata routes.
 If no authorized metadata tool is available, ask the user for the exact tab titles.
 
 1. Inspect the failed action's inputs and any supplied resolved values.
