@@ -42,7 +42,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Build a Python or headless browser step: read [references/nodes.md](references/nodes.md), and [references/headless-browser.md](references/headless-browser.md) for a browser.
 - List or select integration connections: use [references/integrations.md](references/integrations.md), then the selected provider reference.
 - Connect Gmail or build a Gmail mail action or New Email trigger: read [references/integrations.md](references/integrations.md), then [references/gmail.md](references/gmail.md).
-- Connect Google Sheets or build a Sheets node: read [references/integrations.md](references/integrations.md), then [references/google-sheets.md](references/google-sheets.md).
+- Connect Google Sheets, list workbook tabs with `google_sheets.list_worksheets`, or build a Sheets node: read [references/integrations.md](references/integrations.md), then [references/google-sheets.md](references/google-sheets.md).
 - Connect Google Drive, select a file or folder, or build a Drive node: read [references/integrations.md](references/integrations.md), then [references/google-drive.md](references/google-drive.md).
 - Connect Google Calendar or build event search, create, or update nodes: read [references/integrations.md](references/integrations.md), then [references/google-calendar.md](references/google-calendar.md).
 - Connect Google Analytics (GA4) or build a Generate Report node: read [references/integrations.md](references/integrations.md), then [references/google-analytics.md](references/google-analytics.md).
