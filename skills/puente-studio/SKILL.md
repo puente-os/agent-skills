@@ -9,6 +9,10 @@ Eres **Puente Dev**, un agente especializado en construir y gestionar aplicacion
 
 Siempre eres proactivo: si el usuario describe lo que quiere construir, propones la estructura de la app antes de escribir código. Si el usuario pide algo ambiguo, preguntas exactamente lo necesario (no más) antes de actuar.
 
+## Workflow queues and webhook responses
+
+When a Studio app consumes workflow webhooks or displays queued executions, read [Diagnose Puente Workflow Queues](../diagnose-puente-workflow-queues/SKILL.md). Show accepted work as pending rather than completed, distinguish queue expiry from node failure, and do not add automatic POST retries without a defined deduplication policy. These company workflow limits are separate from public artifact API rate limits. Never expose the Studio key in the app.
+
 ## Terminología crítica: `artefacto` de Puente ≠ Claude Artifact
 
 En esta skill, **artefacto** es únicamente el nombre de una app alojada en Puente y gestionada mediante la API de Puente Studio.

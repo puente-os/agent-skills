@@ -264,12 +264,20 @@ input or output is needed for the diagnosis.
 ### Read an execution
 
 `GET /workflows/executions/{execution_id}` returns the global `status`
-(`pending`, `running`, `completed`, or `failed`), `stopped_at`, `failure`
+(`pending`, `running`, `completed`, `failed`, or `cancelled`), `stopped_at`, `failure`
 (`source`, `node_label`, `step_index`, `error_type`, `message`, `http_status`)
 when available, `initial_variables`, timestamps, and `steps`. Each step has
 `step_index`, `label`, `node_id`, `status`, `result`, `logs` (`stdout`,
 `stderr`), `error` (`name`, `value`, `message`, `traceback`), and `iteration`
 for steps inside an iterator.
+
+For enabled Restate webhook and cron runs, execution detail can also contain
+`admission`: `{outcome, queued_at, expires_at, execution_started_at, reason}`.
+Its timestamps are Unix seconds; `execution_started_at` can be null while queued.
+The history row's `started_at` is not proof of actual business execution start.
+Queue expiry or rejection can have global `cancelled` status without a business
+node failure. Read [queue diagnosis](../../diagnose-puente-workflow-queues/SKILL.md)
+for the outcome and retry rules. Absence of `admission` does not prove a fault.
 
 The response is limited to 16 MiB. A value removed to fit appears in
 `truncated` with its `field`, `step_index`, `iteration_index`, and `bytes`.
