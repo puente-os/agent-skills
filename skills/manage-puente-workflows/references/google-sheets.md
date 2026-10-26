@@ -5,6 +5,7 @@
 - Discover the live contract
 - Google Sheets connection behavior
 - Shared input and metadata meanings
+- List worksheets (tabs)
 - Search rows (advanced)
 - Batch get values
 - Batch get values by data filter
@@ -67,13 +68,20 @@ Content-Type: application/json
 {"spreadsheet":"<spreadsheet ID or Google Sheets URL>"}
 ```
 
-An access probe does not alter connection status. A failed probe does not
-authorize changing, replacing, or disconnecting the connection. A requested
-disconnect succeeds with `204 No Content`.
+The connected Google account must own the workbook or have access through
+Google Sheets sharing. This also applies to external Gmail accounts. Sharing
+the workbook with one account does not give another connected account access.
+Check the selected account before asking the owner to share the workbook.
+
+A connection status of `active` alone does not prove workbook access. Inspect
+the spreadsheet access result when supplied, and confirm the action result in
+the editor or execution history. A failed probe does not authorize changing,
+replacing, or disconnecting the connection. A requested disconnect succeeds
+with `204 No Content`.
 
 ## Shared input and metadata meanings
 
-All five actions documented below currently have `manual_execution_allowed: true`. Always rediscover this metadata before relying on it.
+All six actions documented below currently have `manual_execution_allowed: true`. Always rediscover this metadata before relying on it. Rendering options apply only to value-reading actions whose input schema includes them; do not send them to List Worksheets.
 
 - `connection_id` (required): literal opaque Puente connection ID obtained through the lifecycle above; no workflow interpolation.
 - `spreadsheet` (required): spreadsheet ID, supported Google Sheets URL, or a resolved workflow reference.
@@ -82,6 +90,94 @@ All five actions documented below currently have `manual_execution_allowed: true
 - `date_time_render_option` (optional, default `SERIAL_NUMBER`): `SERIAL_NUMBER` returns numeric date/time serials; `FORMATTED_STRING` returns formatted text. Google ignores this setting when `value_render_option` is `FORMATTED_VALUE`.
 
 Downstream nodes reference an output through the saved context key described in [nodes.md](nodes.md), for example `{{read_ranges_1.spreadsheet_id}}`.
+
+## List worksheets (tabs)
+
+Use `google_sheets.list_worksheets`, displayed as **List Worksheets**, to discover
+the tabs inside one workbook. It is read-only (`mutates: false`). It returns tab
+metadata, including hidden tabs, in ascending `index` order. It does not return
+cell values or list files in Google Drive. A Google Sheets connection is enough;
+a separate Drive connection is not required.
+
+The only inputs are:
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| `connection_id` | string | yes | Literal Puente connection ID for the selected Google Sheets account. References are not supported. |
+| `spreadsheet` | string | yes | Workbook ID or supported Google Sheets URL. Workflow references are supported. |
+
+Use the workbook ID from `/spreadsheets/d/<id>/` in a URL. The `gid` value is a
+tab ID; it does not limit which tabs this action returns.
+
+Safe node example:
+
+```json
+{
+  "label": "list_worksheets",
+  "node_id": "google_sheets.list_worksheets",
+  "inputs": {
+    "connection_id": "conn_example_opaque",
+    "spreadsheet": "https://docs.google.com/spreadsheets/d/example-sheet-id/edit?gid=0"
+  },
+  "on_error": "stop",
+  "index_position": 1
+}
+```
+
+Action output example:
+
+```json
+{
+  "sheets": [
+    {
+      "sheetId": 0,
+      "title": "Orders",
+      "index": 0,
+      "hidden": false,
+      "rowCount": 1000,
+      "columnCount": 26
+    },
+    {
+      "sheetId": 123456789,
+      "title": "Archive",
+      "index": 1,
+      "hidden": true,
+      "rowCount": 500,
+      "columnCount": 26
+    }
+  ]
+}
+```
+
+`sheetId` is the numeric tab ID; zero is valid. `title` is its name, `index` is
+its zero-based position, and `hidden` identifies hidden tabs. `rowCount` and
+`columnCount` are grid dimensions, not counts of populated cells; either can be
+`null` when Google supplies no grid dimension. An empty returned tab list is
+`{"sheets":[]}`. Hidden tabs remain in the list even when no tabs are visible.
+
+For the example node, use `{{list_worksheets_1.sheets}}` downstream, or
+`{{list_worksheets_1.sheets[0].title}}` for the first title. The action output has
+no `data` wrapper or `success` flag. Do not use
+`{{list_worksheets_1.data.sheets}}`. Use the returned `sheetId` and `title` from
+the same item when another action requires both `sheet_id` and `sheet_name`.
+
+Keep name filters in downstream workflow logic. For example, a Python code
+node can read `contexto["list_worksheets_1"]["sheets"]`, keep titles that match
+the user's rule, and return only `sheetId` and `title`. Do not add a filter
+input to List Worksheets or maintain a fixed tab list when live discovery is
+required.
+
+If Google reports that the caller has no permission, check workbook sharing
+for the selected Google account. A missing or inaccessible workbook is an
+action failure, not an empty tab list. Reconnecting does not grant workbook
+access. If Google blocks sign-in because the OAuth app is in testing or is not
+verified, report that separate authorization problem to Puente support; do not
+ask a Studio user for provider credentials or cloud administration access.
+
+To validate a saved draft, ask the user to run it in the Puente editor and
+inspect the output or read its execution history through the documented Studio
+routes. This skill does not call workflow execution endpoints, even though
+List Worksheets permits standalone execution in the editor.
 
 ## Search rows (advanced)
 
