@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose Puente Workflow Queues"
+  short_description: "Explain workflow queues, limits, and trigger timeouts"
+  default_prompt: "Use $diagnose-puente-workflow-queues to inspect a queued workflow and explain its admission state, limits, and safe next steps without triggering work."

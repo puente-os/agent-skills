@@ -1,6 +1,6 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed, stuck, or queued workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
@@ -12,6 +12,10 @@ Manage saved workflow definitions for the team attached to the configured Studio
 For a failed or stuck workflow, read [references/troubleshooting.md](references/troubleshooting.md), then the matching entry in [references/errors.md](references/errors.md). Explain the message, likely cause, user action, and retry conditions. Distinguish API responses and saved step errors from internal log messages.
 
 When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Never rerun, resume, or retrigger a workflow through this skill.
+
+## Explain queues and company limits
+
+For pending webhook executions, start limits, active capacity, synchronous queue timeouts, or cron overlap, read [Diagnose Puente Workflow Queues](../diagnose-puente-workflow-queues/SKILL.md). Use execution evidence before suggesting a retry. Queue admission and business-node failure are different outcomes.
 
 ## Read configuration
 
