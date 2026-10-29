@@ -1,5 +1,43 @@
 # Facebook Lead Ads: New Lead
 
+## Start as an external Studio user
+
+Use this reference when a user asks to receive new Facebook form leads in a
+Puente workflow. Reuse the workflow skill; no separate Facebook skill or local
+Meta SDK is required.
+
+1. Read `BASE_URL` and `STUDIO_KEY` from the user's exported environment or
+   consuming project's ignored `.env`, as described in [api.md](api.md).
+   Use the API URL for that key's environment, not the frontend editor URL.
+   Do not copy credentials into the skill installation or chat.
+2. Check availability below, then offer the permitted Meta apps by name.
+   A Meta app identifies the integration used for Facebook authorization.
+   A connected account records a user's authorization through that app;
+   a Page owns the lead Forms. These are separate selections.
+3. Reuse an active account or provide an authorization link if the user chooses
+   to connect another account. The user completes Facebook login and grants
+   access in their browser. Studio users do not need Nango credentials or
+   Meta App Secrets.
+4. Offer the accessible Pages, then Forms on the selected Page. Ask the user
+   to choose specific Forms or explicitly accept all Forms on that Page.
+5. Confirm the subscription effects below before saving a draft. Obtain
+   separate approval before activation. Report the saved workflow ID, version,
+   status, app, account, Page, and Form selection without lead field values.
+
+If no app is available, ask the workspace administrator to make a Meta app
+available to this team. A client-owned app can be used after it is configured
+for the workspace. Signing in with Facebook does not register or import a
+Meta app. Do not ask an external user to create provider configuration or
+change existing integrations to work around missing access.
+
+Example user requests:
+
+- “Show the Facebook Lead Ads apps available to my workspace.”
+- “Use the Inver app and my existing account. Let me select the Page and
+  Forms, then prepare a draft New Lead workflow.”
+- “Connect another Facebook account to this app and show its Pages.”
+- “Show recent executions of this saved workflow and inspect any failure.”
+
 ## Discover availability
 
 Authenticate supported requests with `X-API-Key: <STUDIO_KEY>`. The key sets
@@ -98,6 +136,16 @@ Deactivation stops new dispatches for this workflow. Subscription cleanup can
 have a five-minute preparation grace period and removes only subscriptions
 owned by Puente when no active binding needs them. It does not cancel an
 execution that has already started.
+
+## Check a saved workflow
+
+Use the read-only execution history routes in [api.md](api.md#execution-history)
+to inspect an execution after a new lead arrives through the selected Form.
+Confirm the execution belongs to the saved workflow and version, then inspect
+the trigger output's lead, Page, and Form IDs. An OAuth success, saved draft,
+or empty execution list does not prove lead delivery. Report which steps are
+complete and whether a matching execution was observed. Do not submit a lead,
+retry an execution, or activate a workflow just to obtain validation evidence.
 
 ## Handle errors
 

@@ -50,7 +50,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Connect Google Docs or build Get Document or Insert Text nodes: read [references/integrations.md](references/integrations.md), then [references/google-docs.md](references/google-docs.md).
 - Connect Google BigQuery or build List Tables or Insert Rows nodes: read [references/integrations.md](references/integrations.md), then [references/google-bigquery.md](references/google-bigquery.md).
 - Connect Outlook or build mail, draft, attachment, or new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
-- Connect Facebook Lead Ads or build a New Lead trigger: read [references/facebook-lead-ads.md](references/facebook-lead-ads.md). Select the permitted Meta app first.
+- Set up Facebook Lead Ads for an external user, connect an account, or build a New Lead trigger: read [references/facebook-lead-ads.md](references/facebook-lead-ads.md). Select the permitted Meta app first, then its account, Page, and Forms.
 - Create a workflow: call `POST /workflows/` with a complete JSON definition and acknowledged automatic service effects.
 - Update a definition: call `POST /workflows/` with the stable `scenario_group_id`, a complete JSON definition, and acknowledged automatic service effects.
 - Change saved status: call `PUT /workflows/{scenario_id}/status` with the latest version `id` (`is_latest=true`); an older version returns `409`. Activating requires separate explicit confirmation.
