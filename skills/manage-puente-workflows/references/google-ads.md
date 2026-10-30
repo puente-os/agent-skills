@@ -7,6 +7,7 @@
 - Shared inputs and campaign output
 - Get a campaign
 - Get campaign metrics
+- Search with GAQL
 - Use outputs in later nodes
 - Recover from errors
 
@@ -24,9 +25,12 @@ from this reference. Inputs reject extra properties.
 |---|---|---|---|
 | `google_ads.get_campaign` | Get Campaign | No | Yes |
 | `google_ads.get_campaign_metrics` | Get Campaign Metrics | No | Yes |
+| `google_ads.search` | Search | No | Yes |
 
-Both actions read data. Puente does not expose campaign creation, editing,
-activation, budget changes, billing, or a raw query input through these nodes.
+These actions read data. Use Search for a custom GAQL report, including daily
+rows and conversion value. Use Get Campaign Metrics for its fixed six metrics
+aggregated over a date range. These nodes do not expose campaign creation,
+editing, activation, budget changes, or billing.
 Do not invent account-list or campaign-browser endpoints. Ask for the intended
 customer ID, campaign ID when needed, and manager customer ID when applicable.
 Do not add a provider API version to the node ID or invent a version input.
@@ -78,7 +82,7 @@ alone does not make it ready. A requested disconnect returns `204 No Content`.
 
 Authorization requests Google's `https://www.googleapis.com/auth/adwords`
 scope plus account identity scopes. The Google Ads scope can permit Ads changes,
-although these two Puente actions only read data. Explain this scope before
+although these Puente actions only read data. Explain this scope before
 new authorization. Do not ask an external Studio user for developer tokens,
 Google access tokens, Nango credentials, OAuth secrets, or backend access.
 Do not use JWT-only `/integrations/...` routes with a Studio key.
@@ -100,7 +104,7 @@ campaign ID, not an Ads URL or `customers/.../campaigns/...` resource name.
 All action inputs except `connection_id` support workflow references when
 their live field metadata sets `supports_references: true`.
 
-Both outputs contain a normalized campaign object:
+Get Campaign and Get Campaign Metrics contain a normalized campaign object:
 
 | Field | Meaning |
 |---|---|
@@ -111,7 +115,8 @@ Both outputs contain a normalized campaign object:
 | `advertising_channel_type` | Provider channel, such as `SEARCH` |
 | `bidding_strategy_type` | Provider bidding strategy string, or null |
 
-Use these snake_case output names in references, not Google's camelCase names.
+Use these snake_case output names for those two actions. Search preserves
+Google's field names inside each result, as described below.
 
 ## Get a campaign
 
@@ -184,6 +189,77 @@ valid, for example for a campaign with no activity in the selected period.
 Neither result proves that ads are serving. Do not activate campaigns or change
 budgets to create test data.
 
+## Search with GAQL
+
+Use `google_ads.search` for daily reports, conversion value, account currency,
+impression share, and other fields available through GAQL. Include
+`segments.date` to get daily rows in one query instead of creating one node
+call per date. Search does not need `start_date`, `end_date`, or `campaign_id`
+inputs; put the date range and campaign filters in the query.
+
+| Additional input | Requirement and default |
+|---|---|
+| `query` | Required nonempty GAQL string containing non-whitespace text |
+| `page_token` | Optional continuation string of 1–8,192 characters; default null |
+
+The shared `connection_id`, `customer_id`, and optional `login_customer_id`
+inputs still apply. Do not add `page_size`, `developer_token`, or Nango action
+parameters. A Studio user does not supply a developer token.
+
+This node fragment uses illustrative identifiers. Replace them with the
+selected connection and target customer before saving. Omit
+`login_customer_id` when manager access is not needed.
+
+```json
+{
+  "label": "ads_report",
+  "node_id": "google_ads.search",
+  "inputs": {
+    "connection_id": "11111111-1111-4111-8111-111111111111",
+    "customer_id": "1234567890",
+    "login_customer_id": "9876543210",
+    "query": "SELECT segments.date, customer.id, customer.descriptive_name, customer.currency_code, campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.bidding_strategy_type, campaign_budget.amount_micros, metrics.impressions, metrics.clicks, metrics.ctr, metrics.average_cpc, metrics.average_cpm, metrics.cost_micros, metrics.interactions, metrics.conversions, metrics.conversions_value, metrics.cost_per_conversion, metrics.value_per_conversion, metrics.all_conversions, metrics.all_conversions_value, metrics.view_through_conversions, metrics.search_impression_share, metrics.search_budget_lost_impression_share, metrics.search_rank_lost_impression_share FROM campaign WHERE segments.date DURING LAST_30_DAYS AND campaign.status != 'REMOVED' ORDER BY segments.date DESC",
+    "page_token": null
+  },
+  "on_error": "stop",
+  "index_position": 1
+}
+```
+
+The output contains `results` and nullable `next_page_token`. Each result is
+an unchanged Google Ads row. There is no top-level `rows` or `customer_id`
+in this action's output. GAQL uses snake_case field names, but returned row
+keys use Google's JSON names:
+
+| GAQL field | Result path |
+|---|---|
+| `segments.date` | `segments.date` |
+| `customer.descriptive_name` | `customer.descriptiveName` |
+| `customer.currency_code` | `customer.currencyCode` |
+| `metrics.conversions_value` | `metrics.conversionsValue` |
+| `metrics.cost_micros` | `metrics.costMicros` |
+| `campaign_budget.amount_micros` | `campaignBudget.amountMicros` |
+| `metrics.search_impression_share` | `metrics.searchImpressionShare` |
+| `metrics.search_budget_lost_impression_share` | `metrics.searchBudgetLostImpressionShare` |
+| `metrics.search_rank_lost_impression_share` | `metrics.searchRankLostImpressionShare` |
+
+For this fragment, a later node can use
+`{{ads_report_1.results[0].customer.currencyCode}}` or
+`{{ads_report_1.results[0].metrics.conversionsValue}}` after checking that a
+row and the selected field exist. Preserve raw provider values, including
+integer values returned as strings. Do not replace absent fields with zero.
+
+Use the account's `currencyCode` for money amounts. Convert `costMicros`
+to currency units by dividing by 1,000,000. Conversion value is already in
+currency units. ROAS is `conversionsValue / (costMicros / 1000000)` when
+cost is greater than zero; do not divide conversion value by 1,000,000.
+
+Search returns one page. If `next_page_token` is non-null, pass it as the
+next call's `page_token` and keep the query, connection, customer, and manager
+unchanged. Stop when the token is null. One query can still need several
+pages. `results: []` is valid and does not prove that ads are serving.
+This pagination guidance does not authorize execution through this skill.
+
 ## Use outputs in later nodes
 
 Follow [nodes.md](nodes.md) for context keys. With label `read_campaign` and
@@ -223,7 +299,7 @@ and [troubleshooting.md](troubleshooting.md) for workflow error envelopes.
 
 | Code | User action |
 |---|---|
-| `invalid_input` | Check string IDs, date order, optional nulls, page token, and absence of extra inputs |
+| `invalid_input` | Check string IDs, date order, GAQL syntax and field compatibility, optional nulls, page token, and absence of extra inputs |
 | `needs_reauth` | Offer the documented authorization flow after the user chooses it |
 | `not_accessible` | Check the selected connection, customer ID, manager context, and Google account access |
 | `resource_unavailable` | Check the campaign ID and its customer account |
