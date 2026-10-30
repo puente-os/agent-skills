@@ -46,7 +46,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Connect Google Drive, select a file or folder, or build a Drive node: read [references/integrations.md](references/integrations.md), then [references/google-drive.md](references/google-drive.md).
 - Connect Google Calendar or build event search, create, or update nodes: read [references/integrations.md](references/integrations.md), then [references/google-calendar.md](references/google-calendar.md).
 - Connect Google Analytics (GA4) or build a Generate Report node: read [references/integrations.md](references/integrations.md), then [references/google-analytics.md](references/google-analytics.md).
-- Connect Google Ads or build Get Campaign or Get Campaign Metrics nodes: read [references/integrations.md](references/integrations.md), then [references/google-ads.md](references/google-ads.md).
+- Connect Google Ads or build Search (GAQL daily reports), Get Campaign, or Get Campaign Metrics nodes: read [references/integrations.md](references/integrations.md), then [references/google-ads.md](references/google-ads.md).
 - Connect Google Docs or build Get Document or Insert Text nodes: read [references/integrations.md](references/integrations.md), then [references/google-docs.md](references/google-docs.md).
 - Connect Google BigQuery or build List Tables or Insert Rows nodes: read [references/integrations.md](references/integrations.md), then [references/google-bigquery.md](references/google-bigquery.md).
 - Connect Outlook or build mail, draft, attachment, or new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
