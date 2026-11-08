@@ -7,6 +7,8 @@ description: Organize the Puente workspace into projects and Kanban tasks with a
 
 Projects are the folders that group a team's workspace: apps, tables, workflows and agents. Each project also carries a Kanban task board. This skill manages both with the configured Studio credential.
 
+An agent is a workflow whose `kind` is `"agent"`. Project responses list agents under `agents` and the remaining workflows under `workflows`, but both are assigned and moved as `tipo: "workflow"` with their `scenario_group_id` UUID.
+
 ## Read configuration
 
 Use already-exported `BASE_URL` and `STUDIO_KEY` values or read them from the current project's ignored `.env` file. Never read configuration from the installed marketplace or plugin-cache directory. Stop if either value is missing or still contains a placeholder.
@@ -63,9 +65,10 @@ Every project, task and component you touch must belong to that team. Anything e
 
 ## Before assigning a component
 
-1. Call `GET /proyectos/all_components` and take the component's `id` from the response. Do not construct it from another source: each type uses a different identifier, and for apps, tables and workflows it is a UUID, not a numeric id. The table in [references/api.md](references/api.md) explains each one.
-2. Check whether the component already sits in another project. A component belongs to at most one project, so assigning it **moves** it silently. Warn the user before doing this in bulk.
-3. Send the assignment, then read the project back with `GET /proyectos` and confirm the counts changed.
+1. Call `GET /proyectos/all_components` and take the component's `id` from the response. Do not construct it from another source: each type uses a different identifier, and for apps, tables, workflows and agents it is a UUID, not a numeric id. The table in [references/api.md](references/api.md) explains each one.
+2. Send `tipo: "workflow"` for an item from either `workflows` or `agents`. The legacy `agente` type with numeric ids is deprecated; never send it.
+3. Check whether the component already sits in another project. A component belongs to at most one project, so assigning it **moves** it silently. Warn the user before doing this in bulk.
+4. Send the assignment, then read the project back with `GET /proyectos` and confirm the counts changed.
 
 ## Before changing a task board
 
@@ -78,4 +81,4 @@ The four board states are `backlog`, `pending`, `on_going` and `done`, in that f
 Assigning components needs identifiers that other skills produce. `GET /proyectos/all_components` already returns all of them, so you rarely need to load another skill just to assign. Load them when the user also wants to create or modify the component itself:
 
 - Apps and tables: `puente-studio`.
-- Workflows: `manage-puente-workflows`.
+- Workflows and agents, including creating an agent or switching a workflow between agent and workflow: `manage-puente-workflows`.

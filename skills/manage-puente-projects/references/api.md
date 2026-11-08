@@ -22,18 +22,20 @@ Every path below is relative to `BASE_URL`, with no `/studio` prefix. Authentica
 
 ## Component identifiers
 
-The single most common mistake. Each type is identified differently, and three of the four are UUIDs rather than numeric ids. Always take the value from the `id` field that `GET /proyectos/all_components` returns for that component.
+The single most common mistake. Each type is identified differently. Always take the value from the `id` field that `GET /proyectos/all_components` returns for that component.
 
-| `tipo` | What goes in `componente_id` | Shape | Example |
-|---|---|---|---|
-| `app` | the artifact's **group** id, stable across versions | UUID string | `"3600f621-e90b-49d3-89dc-f5d1b79b9156"` |
-| `workflow` | the workflow's **group** id, stable across versions | UUID string | `"f636b7f0-d6a2-46a0-8669-9f995a083002"` |
-| `tabla` | the table id | UUID string | `"dc32d317-a1c2-432e-9c95-0a53e24d2b9d"` |
-| `agente` | the agent id | numeric, as a string | `"77"` |
+| `tipo` | Response group | What goes in `componente_id` | Shape | Example |
+|---|---|---|---|---|
+| `app` | `apps` | the artifact's **group** id, stable across versions | UUID string | `"3600f621-e90b-49d3-89dc-f5d1b79b9156"` |
+| `workflow` | `workflows` | the workflow's **group** id (`scenario_group_id`), stable across versions | UUID string | `"f636b7f0-d6a2-46a0-8669-9f995a083002"` |
+| `workflow` | `agents` | the agent's **group** id (`scenario_group_id`), stable across versions | UUID string | `"8b1c2e4a-5f3d-4c7b-9a10-2d6e8f0a1b3c"` |
+| `tabla` | `tablas` | the table id | UUID string | `"dc32d317-a1c2-432e-9c95-0a53e24d2b9d"` |
 
 For `app` the API also accepts the numeric version id and normalizes it to the group id. Do not rely on that: the numeric id changes with every push, the group id never does.
 
-`tipo` accepts exactly `app`, `workflow`, `tabla`, `agente`. Note the singular Spanish `agente` in requests, while responses group them under the English key `agents`.
+`tipo` accepts `app`, `workflow` and `tabla`.
+
+**An agent is a workflow.** Every item under `agents` is a workflow whose `kind` is `"agent"`, and every item under `workflows` has `kind: "workflow"`. Both are assigned and moved with `tipo: "workflow"` and their `scenario_group_id`. The response key `agents` is a grouping, not a request type. The old `agente` type, with numeric ids from the legacy agents table, is deprecated: never send it, and never treat a numeric id as an agent identifier.
 
 ---
 
@@ -57,16 +59,18 @@ Omit `proyecto_id`, or pass `ALL`, for the entire workspace. Pass a project id t
     "fecha_creacion": "2026-08-29T00:14:48.127471+00:00",
     "tareas": [],
     "componentes": {
-      "apps":      [ { "id": "3600f621-…", "titulo": "Mi App",  "descripcion": null, "fecha_creacion": "…" } ],
-      "workflows": [ { "id": "f636b7f0-…", "titulo": "Flujo",   "descripcion": null, "fecha_creacion": "…" } ],
-      "tablas":    [ { "id": "dc32d317-…", "titulo": "ventas",  "descripcion": null, "fecha_creacion": "…" } ],
-      "agents":    [ { "id": "77",         "titulo": "Agente",  "descripcion": null, "fecha_creacion": "…" } ]
+      "apps":      [ { "id": "3600f621-…", "titulo": "Mi App",     "descripcion": null, "fecha_creacion": "…", "kind": null } ],
+      "workflows": [ { "id": "f636b7f0-…", "titulo": "Flujo",      "descripcion": null, "fecha_creacion": "…", "kind": "workflow" } ],
+      "tablas":    [ { "id": "dc32d317-…", "titulo": "ventas",     "descripcion": null, "fecha_creacion": "…", "kind": null } ],
+      "agents":    [ { "id": "8b1c2e4a-…", "titulo": "Atención",   "descripcion": null, "fecha_creacion": "…", "kind": "agent" } ]
     }
   }
 ]
 ```
 
 This is the cheapest way to resolve every component identifier at once.
+
+`kind` is `"workflow"` or `"agent"` on workflow items and `null` on apps and tables. An item under `agents` carries the agent's `scenario_group_id` as its `id`, exactly like a workflow.
 
 ---
 
@@ -99,7 +103,7 @@ GET /proyectos
 ]
 ```
 
-`componentes` here holds **counts**, not lists. The counts exclude orphans: a component deleted from its source table stops being counted even if the assignment row survives.
+`componentes` here holds **counts**, not lists. `workflows` counts only workflows with `kind: "workflow"` and `agents` counts only workflows with `kind: "agent"`, so the two never overlap. The counts exclude orphans: a component deleted from its source table stops being counted even if the assignment row survives.
 
 **The `ALL` project is virtual.** It does not exist in the database — it represents everything not assigned to a real project. Its `id` is the literal string `"ALL"`, and it cannot be renamed, deleted, or given tasks or components. `PUT /proyectos/ALL` fails validation because the path expects an integer.
 
@@ -221,9 +225,11 @@ Content-Type: application/json
   { "tipo": "app",      "componente_id": "3600f621-e90b-49d3-89dc-f5d1b79b9156" },
   { "tipo": "tabla",    "componente_id": "dc32d317-a1c2-432e-9c95-0a53e24d2b9d" },
   { "tipo": "workflow", "componente_id": "f636b7f0-d6a2-46a0-8669-9f995a083002" },
-  { "tipo": "agente",   "componente_id": "77" }
+  { "tipo": "workflow", "componente_id": "8b1c2e4a-5f3d-4c7b-9a10-2d6e8f0a1b3c" }
 ]
 ```
+
+The last item assigns an agent: it uses `tipo: "workflow"` with the agent's `scenario_group_id`, taken from the `agents` group. The agent keeps its `kind` and still appears under `agents`.
 
 The body is an array; an empty one returns 400. Response: `{"asignados": 4, "proyecto_id": 7}`.
 
@@ -246,6 +252,14 @@ Set `proyecto_id_destino` to `null` to take the component out of every project. 
 
 Response: `{"movido": true, "tipo": "app", "componente_id": "3600f621-…", "proyecto_id_destino": 7}`.
 
+To move an agent, send `tipo: "workflow"` and the agent's `scenario_group_id`:
+
+```json
+{ "tipo": "workflow", "componente_id": "8b1c2e4a-5f3d-4c7b-9a10-2d6e8f0a1b3c", "proyecto_id_destino": 7 }
+```
+
+Moving a component between projects never changes whether it is an agent or a workflow. That is a separate workflow operation documented in `manage-puente-workflows`.
+
 ---
 
 ## Errors
@@ -256,12 +270,12 @@ Response: `{"movido": true, "tipo": "app", "componente_id": "3600f621-…", "pro
 | `401` | `Invalid or revoked Studio API key` | Key wrong, revoked, or not `tipo='studio'` | Regenerate it at app.puente.xyz → Configuración |
 | `401` | `Not authenticated` | No `X-API-Key` header at all | Add the header |
 | `403` | `Studio API key cannot access the requested team` | An `equipo_id` other than the key's was sent | Omit the field entirely |
-| `404` | `El componente {tipo}/{id} no existe en tu equipo` | Wrong identifier, or the component is another team's | Re-resolve it with `GET /proyectos/all_components` |
+| `404` | `El componente {tipo}/{id} no existe en tu equipo` | Wrong identifier, the component is another team's, or an agent was sent with a numeric id | Re-resolve it with `GET /proyectos/all_components`; send agents as `tipo: "workflow"` with their UUID |
 | `404` | `Proyecto no encontrado.` | The project does not exist or belongs to another team | Verify with `GET /proyectos` |
 | `404` | `Tarea no encontrada.` | The task does not exist in that project | Verify with `GET /proyectos/{id}/tareas` |
 | `400` | `Debes enviar al menos un campo para actualizar` | Empty PUT body | Include at least one field |
 | `400` | `Estado inválido` | State outside the enum | Use `backlog`, `pending`, `on_going` or `done` |
-| `400` | `Tipo de componente inválido` | `tipo` outside the enum | Use `app`, `workflow`, `tabla` or `agente` |
+| `400` | `Tipo de componente inválido` | `tipo` outside the enum | Use `app`, `workflow` or `tabla`; agents use `workflow` |
 | `422` | validation error | Wrong field type or shape | Read the message: it names the field |
 
 A 401 on a DELETE and a 401 from a bad key look alike at the status level. Tell them apart by the method: if you sent a DELETE, the credential is working fine and the operation is simply not available to it.
