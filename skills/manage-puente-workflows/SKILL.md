@@ -1,17 +1,27 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows, create a draft or complete new version, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows and agents, create a workflow or an agent (kind agent) as a draft or complete new version, switch a workflow between agent and workflow kind, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
 ---
 
 # Manage Puente Workflows
 
-Manage saved workflow definitions for the team attached to the configured Studio credential. Do not run, trigger, or resume workflows, and do not call webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
+Manage saved workflow definitions, including agents, for the team attached to the configured Studio credential. Do not run, trigger, or resume workflows, and do not call webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
 
 ## Diagnose a workflow error
 
 For a failed or stuck workflow, read [references/troubleshooting.md](references/troubleshooting.md), then the matching entry in [references/errors.md](references/errors.md). Explain the message, likely cause, user action, and retry conditions. Distinguish API responses and saved step errors from internal log messages.
 
 When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Never rerun, resume, or retrigger a workflow through this skill.
+
+## Agents are workflows
+
+An agent is a workflow whose `kind` is `"agent"`. It shares versions, execution, webhooks, schedules, permissions, and every endpoint in this skill with ordinary workflows; `kind` only places it in the **Agents** section instead of **Workflows**.
+
+- Use `agent` when the user wants something that converses with customers or the team and answers with AI around an agent step (`node_type` `AGENT` or `AGENT_ADVANCED`).
+- Use `workflow` when the user wants fixed steps that connect tables and integrations.
+- Ask when the request is ambiguous. A new workflow without `kind` is saved as `workflow`, even if its graph looks like an agent.
+
+Read the "Agents and workflows" section of [references/api.md](references/api.md) before creating an agent or changing a kind.
 
 ## Read configuration
 
@@ -33,7 +43,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 
 ## Choose an operation
 
-- List saved workflows: call `GET /workflows/`.
+- List saved workflows and agents: call `GET /workflows/`. Both come back together; filter by `kind` when the user asks for only one of them.
 - Inspect a version or stable group: call `GET /workflows/?all_versions=true` and filter the returned definitions by `id` or `scenario_group_id`.
 - List a workflow's recent executions: call `GET /workflows/{scenario_id}/executions` with any version `id` of that workflow.
 - Read one execution's status, steps, errors, and logs: call `GET /workflows/executions/{execution_id}`.
@@ -52,7 +62,9 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Connect Outlook or build mail, draft, attachment, or new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
 - Set up Facebook Lead Ads for an external user, connect an account, or build a New Lead trigger: read [references/facebook-lead-ads.md](references/facebook-lead-ads.md). Select the permitted Meta app first, then its account, Page, and Forms.
 - Create a workflow: call `POST /workflows/` with a complete JSON definition and acknowledged automatic service effects.
+- Create an agent: call `POST /workflows/` the same way with `"kind": "agent"` and an `AGENT` or `AGENT_ADVANCED` node as its agent step. Without `kind`, the new group is a workflow.
 - Update a definition: call `POST /workflows/` with the stable `scenario_group_id`, a complete JSON definition, and acknowledged automatic service effects.
+- Turn a workflow into an agent or an agent into a workflow: call `PUT /workflows/groups/{scenario_group_id}/kind` with `{"kind": "agent"}` or `{"kind": "workflow"}` after the user confirms the target kind. It changes every version and never alters the graph. Changing to `agent` without an `AGENT` or `AGENT_ADVANCED` node returns `422 Necesita un paso de agente`.
 - Change saved status: call `PUT /workflows/{scenario_id}/status` with the latest version `id` (`is_latest=true`); an older version returns `409`. Activating requires separate explicit confirmation.
 - Delete or run a workflow: state that the operation is outside this skill and do nothing. Deleting the current version of an active workflow with several versions returns `409`; it must be deactivated first.
 
@@ -77,7 +89,7 @@ This is the concrete behavior previously described as “guard writes”: inspec
 Treat `scenario_group_id` as the stable workflow identity and `id` as one saved version.
 
 - Omit `scenario_group_id` to create a new workflow at version 1.
-- Include the existing `scenario_group_id` to create the next version.
+- Include the existing `scenario_group_id` to create the next version. The version inherits the group's `kind`; a `kind` in that payload is ignored.
 - Send every node and edge on each new version; never send a partial patch.
 - Save both identifiers from the response.
 - Expect the new version to have `is_latest=true`.
@@ -103,9 +115,10 @@ After a successful create or version write and read-back:
 4. Distinguish the webhook endpoint from the workflow editor URL. They serve
    different purposes.
 5. For production only, build the frontend editor URL as
-   `https://app.puente.xyz/workflows/{scenario_group_id}/edit` and show it as a
-   clickable link. The UUID is the stable `scenario_group_id`, not the saved
-   version `id`.
+   `https://app.puente.xyz/workflows/{scenario_group_id}/edit`, or
+   `https://app.puente.xyz/agentes/{scenario_group_id}/edit` when `kind` is
+   `"agent"`, and show it as a clickable link. The UUID is the stable
+   `scenario_group_id`, not the saved version `id`.
 6. For staging, report the Puente staging webhook endpoint when available, but
    do not invent a staging frontend host or substitute the production editor
    URL unless a current public contract documents that mapping.
@@ -187,6 +200,7 @@ Report the HTTP outcome and these non-secret fields:
 - `scenario_group_id`
 - `version`
 - `is_latest`
+- `kind`
 - `status`
 - `equipo_id`
 - `sync_webhook_id` when returned

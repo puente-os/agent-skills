@@ -7,6 +7,7 @@
 - Available actions
 - Payloads
 - Node definitions
+- Agents and workflows
 - Definition-management flows
 - Execution history
 - Errors and safety
@@ -33,11 +34,12 @@ Send `X-API-Key: <STUDIO_KEY>` on every request. The credential supplies the com
 | Integration catalog | `GET /workflows/integrations` | Use to discover valid `node_id` values and their public input schemas. |
 | Function catalog | `GET /workflows/functions` | Read-only list of field functions; see [expressions.md](expressions.md). |
 | Preview a field value | `POST /workflows/expressions/evaluate` | Read-only formula preview with sample `variables`; it never runs or saves a workflow. |
-| List definitions | `GET /workflows/` | Latest version per group by default. |
+| List definitions | `GET /workflows/` | Latest version per group by default. Includes agents; read `kind`. |
 | List version history | `GET /workflows/?all_versions=true` | Used to inspect a version or group locally. |
 | Create definition | `POST /workflows/` | Omit `scenario_group_id`; acknowledge automatic service effects. |
 | Create updated version | `POST /workflows/` | Include `scenario_group_id`, the complete definition, and acknowledged side effects. |
 | Change saved status | `PUT /workflows/{scenario_id}/status` | Use the latest version ID; activation requires explicit confirmation. |
+| Change agent or workflow kind | `PUT /workflows/groups/{scenario_group_id}/kind` | Updates every version of the group; see Agents and workflows. |
 | List executions | `GET /workflows/{scenario_id}/executions` | Read-only; see Execution history. |
 | Read an execution | `GET /workflows/executions/{execution_id}` | Read-only; see Execution history. |
 
@@ -69,7 +71,8 @@ Read [nodes.md](nodes.md) for the external node contract, public catalog fields,
   "status": "draft",
   "scenario_group_id": null,
   "edges": [],
-  "current_scenario_id": null
+  "current_scenario_id": null,
+  "kind": "workflow"
 }
 ```
 
@@ -85,6 +88,7 @@ Required fields are `nombre` and `nodes`. Saved statuses are `draft`, `active`, 
 - `scenario_group_id` (optional): stable group ID whose next version is being created. Omit it for a new workflow.
 - `edges` (optional): complete visual/execution connections between node context keys.
 - `current_scenario_id` (optional): current version identifier when supplied by the caller's versioning flow; preserve it from an existing complete payload rather than inventing it.
+- `kind` (optional): `"workflow"` or `"agent"`. Read only when `scenario_group_id` is absent: a new group takes the sent value, or `"workflow"` when it is omitted. The shape of the graph never decides it. On a new version of an existing group the payload value is ignored and the group's `kind` is inherited. To create an agent, send `"kind": "agent"` and include an `AGENT` or `AGENT_ADVANCED` node as its agent step; creation does not check for that node, but changing a kind to `agent` later does.
 
 Each `WorkflowNode` accepts:
 
@@ -109,10 +113,12 @@ The compatible context-key convention from the supplied guide is `label_index_po
 Important fields:
 
 ```text
-id, scenario_group_id, version, is_latest, nombre, descripcion,
+id, scenario_group_id, version, is_latest, kind, nombre, descripcion,
 nodes, edges, status, equipo_id, webhook_url, sync_webhook_id,
 created_by_user_id, created_at, updated_at, validation_warnings
 ```
+
+`kind` is `"workflow"` or `"agent"` in every scenario response, including `GET /workflows/` and `POST /workflows/`.
 
 `POST /workflows/` and `PUT /workflows/{scenario_id}/status` also return `schedule`:
 
@@ -131,6 +137,37 @@ created_by_user_id, created_at, updated_at, validation_warnings
 - `not_scheduled`: the workflow does not run on a schedule. `reason` is `inactive`, `not_schedule_trigger`, `missing_cron`, or `legacy_unscheduled` (an older active workflow that is scheduled on its next save or activation). Report it as information, not as an error.
 - `sync_failed`: the definition was saved and remains active, but the schedule could not be synchronized; `error_code` explains why. A changed cron keeps the previous schedule until synchronization succeeds. Report it; the next save or the backend's periodic repair retries it. Do not retry automatically.
 - `not_configured`: scheduling is disabled in this environment.
+
+## Agents and workflows
+
+An agent is a workflow with `kind: "agent"`. It uses the same versions, execution, webhooks, schedules, permissions, and endpoints as any workflow. `kind` only decides how the product presents and manages it: agents appear in the **Agents** section and workflows in **Workflows**.
+
+Choose the kind from what the user wants to build:
+
+- `agent`: it converses with customers or the team and answers with AI around an agent step, a catalog node whose `node_type` is `AGENT` (simple agent) or `AGENT_ADVANCED` (advanced agent). Any trigger works, and extra steps do not stop it from being an agent.
+- `workflow`: it follows fixed steps that connect tables and integrations, even when one of those steps uses AI.
+
+When the request is ambiguous, ask which one the user means instead of guessing. An agent-shaped graph saved without `kind` is still a workflow.
+
+`GET /workflows/` keeps listing agents together with workflows. Filter by `kind` when the user asks only for one of them. In project responses, agents appear in their own `agents` group but are still assigned with `tipo: "workflow"`; see the `manage-puente-projects` skill.
+
+### Change the kind
+
+```http
+PUT /workflows/groups/{scenario_group_id}/kind
+X-API-Key: ...
+Content-Type: application/json
+
+{"kind": "agent"}
+```
+
+The path takes the stable `scenario_group_id`, not a version `id`. The body accepts `"agent"` or `"workflow"`. The call accepts the Studio credential, as the status change does; it requires the `resource:workflow:update` permission for a user token, and the workflow must belong to the credential's team.
+
+- `200`: `{"scenario_group_id": "<uuid>", "kind": "agent"}`. Every version of the group now has that `kind`.
+- `422` with `{"detail": "Necesita un paso de agente"}`: changing to `agent` requires the latest version to contain at least one node whose `node_type` is `AGENT` or `AGENT_ADVANCED`. Add that step with a new version first, or keep the workflow kind.
+- `404`: the group does not exist or belongs to another team.
+
+Changing the kind does not alter the graph, the status, the version, the schedule, or the webhook. It creates no new version and needs no side-effect confirmation, but confirm the target kind with the user before sending it, because it moves the component between the Agents and Workflows sections. Read the group back and verify `kind`.
 
 ## Definition-management flows
 
@@ -153,7 +190,7 @@ Request all versions, then:
 
 ### Create
 
-Send the complete definition with `scenario_group_id` absent or `null`. Record the returned `id` and generated `scenario_group_id`.
+Send the complete definition with `scenario_group_id` absent or `null`. Send `"kind": "agent"` to create an agent; omit it or send `"workflow"` for a workflow. Record the returned `id`, generated `scenario_group_id`, and `kind`.
 
 The Puente service also:
 
@@ -172,10 +209,12 @@ There is no partial definition update.
 2. Copy `nombre`, `descripcion`, `nodes`, `edges`, and `status` into a new payload.
 3. Set `scenario_group_id` to the existing stable group ID.
 4. Apply the requested edits.
-5. Explain that the new version inherits `sync_webhook_id` from the prior version, preserving the fixed Puente webhook endpoint, and that saving it as active with a `trigger.schedule` node creates or updates the workflow's schedule.
+5. Explain that the new version inherits `kind` and `sync_webhook_id` from the prior version, preserving the fixed Puente webhook endpoint, and that saving it as active with a `trigger.schedule` node creates or updates the workflow's schedule.
 6. Obtain explicit user confirmation of the automatic service effects.
 7. POST the complete payload once.
-8. Verify that `version` increased and `is_latest` is true.
+8. Verify that `version` increased, `is_latest` is true, and `kind` is unchanged.
+
+A new version never changes `kind`, even when the payload sends another value. Use the kind endpoint to change it.
 
 ### Schedule triggers
 
@@ -207,7 +246,7 @@ Use only these configured API origins:
 
 | Environment | API origin | Derived webhook endpoint | Frontend editor URL |
 |---|---|---|---|
-| Production | `https://api.puente.xyz` | `https://api.puente.xyz/workflows/webhook/{sync_webhook_id}` | `https://app.puente.xyz/workflows/{scenario_group_id}/edit` |
+| Production | `https://api.puente.xyz` | `https://api.puente.xyz/workflows/webhook/{sync_webhook_id}` | `https://app.puente.xyz/workflows/{scenario_group_id}/edit`; for `kind: "agent"`, `https://app.puente.xyz/agentes/{scenario_group_id}/edit` |
 | Staging | `https://staging.puente.xyz` | `https://staging.puente.xyz/workflows/webhook/{sync_webhook_id}` | Not defined by this contract; do not invent one. |
 
 The stable `scenario_group_id` identifies the workflow project across versions
@@ -289,8 +328,8 @@ payloads, `initial_variables`, or logs into reports.
 
 - `401`: the Studio credential is missing, invalid, revoked, or not accepted.
 - `403`: the operation attempts a resource outside the credential's team.
-- `404`: the requested saved definition cannot be found through the available list data, or the requested workflow or execution does not exist or belongs to another team.
+- `404`: the requested saved definition cannot be found through the available list data, or the requested workflow, workflow group, or execution does not exist or belongs to another team.
 - `409`: `PUT /workflows/{scenario_id}/status` received a version that is not the latest. Deleting the current version of an active workflow with several versions also returns `409`; it must be deactivated first.
-- `422`: the payload shape is invalid, a schedule validation code applies (see Schedule triggers), or a field formula is invalid (see Field formula validation).
+- `422`: the payload shape is invalid, a schedule validation code applies (see Schedule triggers), a field formula is invalid (see Field formula validation), or `PUT /workflows/groups/{scenario_group_id}/kind` asked for `agent` on a workflow without an `AGENT` or `AGENT_ADVANCED` node (`Necesita un paso de agente`).
 
-Never print the Studio credential or persist it outside the current project's ignored `.env`. Do not automatically retry create, version, or status mutations after a network interruption.
+Never print the Studio credential or persist it outside the current project's ignored `.env`. Do not automatically retry create, version, status, or kind mutations after a network interruption.
