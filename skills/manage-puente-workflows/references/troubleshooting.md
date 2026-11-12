@@ -78,7 +78,8 @@ If no authorized metadata tool is available, ask the user for the exact tab titl
    Preserve the action's intended cells and other inputs.
 5. Read back the saved definition to check the correction.
    Check completed steps and external writes before a separately authorized retry.
-   This skill must not run or resume the workflow.
+   For a requested retry, follow [retry.md](retry.md). A retry uses the original
+   saved version and inputs, so it does not apply this definition correction.
 
 In a confirmed incident, the action requested `Sheet1`, but read-only metadata
 reported a tab titled `bancos_prueba`. Google returned
@@ -96,6 +97,7 @@ complete provider bodies, and internal traces out of public diagnostics.
 3. Explain one concrete user action. Separate definition/input corrections from issues that require Puente support.
 4. State whether a retry could help. Check completed steps and external actions before suggesting another run.
 5. For a requested definition fix, use the existing inspect, write, and read-back procedure in [api.md](api.md). Diagnostic guidance does not authorize activation or execution.
+6. For an explicitly requested retry of a failed execution, follow [retry.md](retry.md) with the Studio key. Check eligibility and obtain authorization for the selected strategy and possible duplicate effects. Do not use a retry to apply a later definition fix.
 
 Do not rerun, resume, trigger, or reactivate a workflow automatically. Do not
 clear application locks or change stored execution state as a troubleshooting
