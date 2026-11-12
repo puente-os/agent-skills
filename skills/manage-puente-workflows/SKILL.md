@@ -1,17 +1,21 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflow definitions and connection-backed workflow integrations with a Puente Studio credential. Use when an external Puente Studio user needs to configure Gmail, Google Sheets, Google Drive, Google Calendar, Google Analytics (GA4), Google Ads, Google Docs, Google BigQuery, Outlook, or Facebook Lead Ads connections and nodes, write Python or headless browser (Playwright) code nodes, reuse or authorize an integration account, diagnose failed or stuck workflows from their execution history, execution details, or supplied error details, write field formulas with now, today, format_date, or uuid, inspect workflows and agents, create a workflow or an agent (kind agent) as a draft or complete new version, switch a workflow between agent and workflow kind, connect nodes and edges, or change a saved workflow version's status. Disclose automatic Puente webhook and scheduling side effects, require explicit activation confirmation, and never call workflow run endpoints.
+description: Manage Puente workflows and agents with a Puente Studio credential. Use to inspect or version definitions, change saved status or kind, configure connection-backed integrations, write Python or headless browser code nodes and field formulas, diagnose workflow errors from execution history, or retry a failed execution from its failed step or from the start when the configured API supports it. Disclose automatic webhook and scheduling effects, require explicit activation confirmation, and obtain authorization for the selected retry strategy and possible duplicate effects.
 ---
 
 # Manage Puente Workflows
 
-Manage saved workflow definitions, including agents, for the team attached to the configured Studio credential. Do not run, trigger, or resume workflows, and do not call webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
+Manage saved workflow definitions, including agents, and retry failed executions for the team attached to the configured Studio credential. Use only the retry procedure below to start a linked execution. Do not call general run, trigger, webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
 
 ## Diagnose a workflow error
 
 For a failed or stuck workflow, read [references/troubleshooting.md](references/troubleshooting.md), then the matching entry in [references/errors.md](references/errors.md). Explain the message, likely cause, user action, and retry conditions. Distinguish API responses and saved step errors from internal log messages.
 
-When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Never rerun, resume, or retrigger a workflow through this skill.
+When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Diagnosis alone does not authorize a retry.
+
+## Retry a failed execution
+
+For a requested retry from the failed step or from the start, read [references/retry.md](references/retry.md). Use the configured Studio key with `X-API-Key` for eligibility, retry, and result reads; never request a user JWT. Check the configured API's availability and the selected execution's eligibility. Explain which steps will run and the possible duplicate effects, then obtain authorization for that execution and strategy unless the user has already given it with those effects understood. Send one retry request and verify the linked execution through execution-detail reads. Do not treat `202` as completion or retry another failure automatically.
 
 ## Agents are workflows
 
@@ -47,6 +51,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Inspect a version or stable group: call `GET /workflows/?all_versions=true` and filter the returned definitions by `id` or `scenario_group_id`.
 - List a workflow's recent executions: call `GET /workflows/{scenario_id}/executions` with any version `id` of that workflow.
 - Read one execution's status, steps, errors, and logs: call `GET /workflows/executions/{execution_id}`.
+- Check retry eligibility or retry a failed execution: read [references/retry.md](references/retry.md); use `GET` or `POST /workflows/executions/{execution_id}/retry` with the Studio key.
 - Discover valid node types: call `GET /workflows/integrations`.
 - Write or fix a field formula (`now`, `today`, `format_date`, `uuid`): read [references/expressions.md](references/expressions.md), preview it with `POST /workflows/expressions/evaluate`, and list functions with `GET /workflows/functions`.
 - Build a Python or headless browser step: read [references/nodes.md](references/nodes.md), and [references/headless-browser.md](references/headless-browser.md) for a browser.
@@ -66,7 +71,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Update a definition: call `POST /workflows/` with the stable `scenario_group_id`, a complete JSON definition, and acknowledged automatic service effects.
 - Turn a workflow into an agent or an agent into a workflow: call `PUT /workflows/groups/{scenario_group_id}/kind` with `{"kind": "agent"}` or `{"kind": "workflow"}` after the user confirms the target kind. It changes every version and never alters the graph. Changing to `agent` without an `AGENT` or `AGENT_ADVANCED` node returns `422 Necesita un paso de agente`.
 - Change saved status: call `PUT /workflows/{scenario_id}/status` with the latest version `id` (`is_latest=true`); an older version returns `409`. Activating requires separate explicit confirmation.
-- Delete or run a workflow: state that the operation is outside this skill and do nothing. Deleting the current version of an active workflow with several versions returns `409`; it must be deactivated first.
+- Retry an existing failed execution: use the retry procedure. Starting an unrelated run or deleting a workflow is outside this skill. Deleting the current version of an active workflow with several versions returns `409`; it must be deactivated first.
 
 ## Before changing a definition
 
@@ -128,7 +133,7 @@ corresponding URL could not be derived instead of guessing.
 
 ## Distinguish management from execution
 
-Do not directly call workflow execution, trigger, webhook, cron, schedule, or run endpoints. The two read-only execution history routes are the only execution routes this skill uses. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
+Use execution-history reads for diagnosis and the dedicated retry routes for an authorized retry of an existing failed execution. Do not call general execution-start, trigger, webhook, cron, schedule, or run endpoints. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
 
 Definition management can still change runtime eligibility:
 

@@ -10,11 +10,12 @@
 - Agents and workflows
 - Definition-management flows
 - Execution history
+- Execution retry
 - Errors and safety
 
 ## Scope
 
-Manage saved workflow definitions and read their execution history. Never directly call workflow execution, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
+Manage saved workflow definitions, read their execution history, and retry an existing failed execution through the dedicated retry routes when available. Do not call general execution-start, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
 
 ## Configuration and authentication
 
@@ -42,6 +43,8 @@ Send `X-API-Key: <STUDIO_KEY>` on every request. The credential supplies the com
 | Change agent or workflow kind | `PUT /workflows/groups/{scenario_group_id}/kind` | Updates every version of the group; see Agents and workflows. |
 | List executions | `GET /workflows/{scenario_id}/executions` | Read-only; see Execution history. |
 | Read an execution | `GET /workflows/executions/{execution_id}` | Read-only; see Execution history. |
+| Check retry eligibility | `GET /workflows/executions/{execution_id}/retry` | Requires execute permission; see [retry.md](retry.md). |
+| Retry a failed execution | `POST /workflows/executions/{execution_id}/retry` | Authorized strategy and duplicate-effect acknowledgement required; see [retry.md](retry.md). |
 
 No other workflow-definition action is part of this skill. Connection management is documented separately in [integrations.md](integrations.md); provider action contracts remain in [gmail.md](gmail.md) and [google-sheets.md](google-sheets.md).
 
@@ -324,6 +327,14 @@ Execution data can contain personal data or secrets received by the workflow.
 Quote only the excerpts that support the diagnosis. Never copy complete
 payloads, `initial_variables`, or logs into reports.
 
+## Execution retry
+
+Read [retry.md](retry.md) for availability checks, Studio-key permissions, both
+retry strategies, request and response fields, duplicate-effect authorization,
+and linked-execution verification. Execution-history access does not prove
+permission to check eligibility or retry. Retrying uses the original saved
+version and inputs; it does not apply a later definition fix.
+
 ## Errors and safety
 
 - `401`: the Studio credential is missing, invalid, revoked, or not accepted.
@@ -332,4 +343,4 @@ payloads, `initial_variables`, or logs into reports.
 - `409`: `PUT /workflows/{scenario_id}/status` received a version that is not the latest. Deleting the current version of an active workflow with several versions also returns `409`; it must be deactivated first.
 - `422`: the payload shape is invalid, a schedule validation code applies (see Schedule triggers), a field formula is invalid (see Field formula validation), or `PUT /workflows/groups/{scenario_group_id}/kind` asked for `agent` on a workflow without an `AGENT` or `AGENT_ADVANCED` node (`Necesita un paso de agente`).
 
-Never print the Studio credential or persist it outside the current project's ignored `.env`. Do not automatically retry create, version, status, or kind mutations after a network interruption.
+Never print the Studio credential or persist it outside the current project's ignored `.env`. Do not automatically retry create, version, status, kind, or execution-retry mutations after a network interruption. For an uncertain retry response, follow the linked-execution recovery procedure in [retry.md](retry.md).
