@@ -26,13 +26,13 @@ Check `GET /openapi.json` at the configured API for both methods on
 Then check the execution's eligibility. OpenAPI registration alone does not
 prove that retries are enabled or that the execution can be retried.
 
-The current backend source enables retries only in `local` and `development`
-environments with retry preparation available. Production and an environment
-named `staging` are disabled in that source. A hostname does not establish the
-server's environment or deployed version. Do not promise deployed availability
-from source code, this skill release, or a host name. If the contract is absent
-or the API reports retry unavailable, stop and report the limitation. Do not
-change `BASE_URL` or use a webhook or general run endpoint as a fallback.
+Retry is supported in all environments, including production, when the
+configured API exposes this contract and retry preparation is available.
+Check the deployed API and execution eligibility in the configured environment.
+A hostname or this skill release does not prove deployed availability. If the
+contract is absent or the API reports retry unavailable, stop and report the
+limitation. Do not change `BASE_URL` or use a webhook or general run endpoint
+as a fallback.
 
 ## Inspect the execution and choose a strategy
 
