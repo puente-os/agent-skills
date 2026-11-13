@@ -15,7 +15,7 @@
 
 ## Scope
 
-Manage saved workflow definitions, read their execution history, and retry an existing failed execution through the dedicated retry routes when available. Do not call general execution-start, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
+Manage saved workflow definitions, read their execution history, and retry one failed execution or a batch through the dedicated retry routes when available. Do not call general execution-start, trigger, webhook, cron, schedule, or deletion endpoints. Definition writes have automatic backend lifecycle side effects documented below, including schedule management, so no separate cron call is needed.
 
 ## Configuration and authentication
 
@@ -45,6 +45,12 @@ Send `X-API-Key: <STUDIO_KEY>` on every request. The credential supplies the com
 | Read an execution | `GET /workflows/executions/{execution_id}` | Read-only; see Execution history. |
 | Check retry eligibility | `GET /workflows/executions/{execution_id}/retry` | Requires execute permission; see [retry.md](retry.md). |
 | Retry a failed execution | `POST /workflows/executions/{execution_id}/retry` | Authorized strategy and duplicate-effect acknowledgement required; see [retry.md](retry.md). |
+| List batch candidates | `GET /workflows/{scenario_id}/retry-batches/candidates` | Fixed pages of 50; see [batch-retry.md](batch-retry.md). |
+| Count daily failures | `GET /workflows/{scenario_id}/retry-batches/calendar` | Timezone-aware counts, not retry eligibility. |
+| Freeze a retry selection | `POST /workflows/{scenario_id}/retry-batches/review` | Persists a batch without executing it. |
+| Submit a retry batch | `POST /workflows/{scenario_id}/retry-batches/{batch_id}/submit` | Requires authorization and duplicate-effect acknowledgement. |
+| Read batch progress | `GET /workflows/{scenario_id}/retry-batches/{batch_id}` | Counts and item pages of 50. |
+| List recent batches | `GET /workflows/{scenario_id}/retry-batches` | Latest five submitted batches for this operator. |
 
 No other workflow-definition action is part of this skill. Connection management is documented separately in [integrations.md](integrations.md); provider action contracts remain in [gmail.md](gmail.md) and [google-sheets.md](google-sheets.md).
 
@@ -334,6 +340,8 @@ retry strategies, request and response fields, duplicate-effect authorization,
 and linked-execution verification. Execution-history access does not prove
 permission to check eligibility or retry. Retrying uses the original saved
 version and inputs; it does not apply a later definition fix.
+
+For selection, version constraints, submission, status, and uncertain-response recovery for several executions, read [batch-retry.md](batch-retry.md). All batch endpoints require `resource:workflow:execute`, including reads.
 
 ## Errors and safety
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Manage Puente Workflows"
   short_description: "Manage workflows, diagnose errors, and retry failed runs"
-  default_prompt: "Use $manage-puente-workflows with my Studio key to manage workflow definitions and integration connections, diagnose an error from execution history, or retry a failed execution from its failed step or from the start after checking availability, permissions, and possible duplicate effects."
+  default_prompt: "Use $manage-puente-workflows with my Studio key to manage workflow definitions and integration connections, diagnose an error from execution history, or retry one failed execution or a batch from the failed step or from the start after checking availability, permissions, and possible duplicate effects."
