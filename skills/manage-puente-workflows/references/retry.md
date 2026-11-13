@@ -140,3 +140,7 @@ and observed status or failure. Do not expose credentials, full inputs, or logs.
 | Eligibility false | Show the selected strategy's reason. No POST; no automatic strategy fallback. |
 | `409` | Report the rejection, expired/unreadable saved data, incompatible runtime, or conflicting linked strategy. Read eligibility and any existing child before further action. |
 | `422` | Check the UUID, strategy, and required true acknowledgement against OpenAPI. Missing authorization cannot be repaired by setting the acknowledgement. |
+
+## Retry several executions
+
+For a user-requested batch, use [batch-retry.md](batch-retry.md). Do not implement a batch through repeated single-execution retry requests. The batch API preserves a frozen selection, eligibility results, and durable progress for agents.

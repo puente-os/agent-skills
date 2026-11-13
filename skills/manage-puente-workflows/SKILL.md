@@ -1,6 +1,6 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflows and agents with a Puente Studio credential. Use to inspect or version definitions, change saved status or kind, configure connection-backed integrations, write Python or headless browser code nodes and field formulas, diagnose workflow errors from execution history, or retry a failed execution from its failed step or from the start when the configured API supports it. Disclose automatic webhook and scheduling effects, require explicit activation confirmation, and obtain authorization for the selected retry strategy and possible duplicate effects.
+description: Manage Puente workflows and agents with a Puente Studio credential. Use to inspect or version definitions, change saved status or kind, configure connection-backed integrations, write Python or headless browser code nodes and field formulas, diagnose workflow errors from execution history, or retry one failed execution or a batch from the failed step or from the start when the configured API supports it. Disclose automatic webhook and scheduling effects, require explicit activation confirmation, and obtain authorization for the selected retry strategy and possible duplicate effects.
 ---
 
 # Manage Puente Workflows
@@ -13,9 +13,11 @@ For a failed or stuck workflow, read [references/troubleshooting.md](references/
 
 When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Diagnosis alone does not authorize a retry.
 
-## Retry a failed execution
+## Retry failed executions
 
 For a requested retry from the failed step or from the start, read [references/retry.md](references/retry.md). Use the configured Studio key with `X-API-Key` for eligibility, retry, and result reads; never request a user JWT. Check the configured API's availability and the selected execution's eligibility. Explain which steps will run and the possible duplicate effects, then obtain authorization for that execution and strategy unless the user has already given it with those effects understood. Send one retry request and verify the linked execution through execution-detail reads. Do not treat `202` as completion or retry another failure automatically.
+
+For a requested batch retry, read [references/batch-retry.md](references/batch-retry.md). Use the dedicated batch API rather than a loop of single retries. Keep each batch within one workflow and one original version. Inspect the frozen selection before submission, reuse existing authorization when sufficient, and track the returned batch ID and linked executions. Batch status remains available to agents even when the frontend returns to ordinary history.
 
 ## Agents are workflows
 
@@ -52,6 +54,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - List a workflow's recent executions: call `GET /workflows/{scenario_id}/executions` with any version `id` of that workflow.
 - Read one execution's status, steps, errors, and logs: call `GET /workflows/executions/{execution_id}`.
 - Check retry eligibility or retry a failed execution: read [references/retry.md](references/retry.md); use `GET` or `POST /workflows/executions/{execution_id}/retry` with the Studio key.
+- Select, review, submit, or track a retry batch: read [references/batch-retry.md](references/batch-retry.md); use the Studio key for every batch endpoint.
 - Discover valid node types: call `GET /workflows/integrations`.
 - Write or fix a field formula (`now`, `today`, `format_date`, `uuid`): read [references/expressions.md](references/expressions.md), preview it with `POST /workflows/expressions/evaluate`, and list functions with `GET /workflows/functions`.
 - Build a Python or headless browser step: read [references/nodes.md](references/nodes.md), and [references/headless-browser.md](references/headless-browser.md) for a browser.
