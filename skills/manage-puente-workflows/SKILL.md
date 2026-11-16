@@ -67,7 +67,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 - Connect Google Ads or build Search (GAQL daily reports), Get Campaign, or Get Campaign Metrics nodes: read [references/integrations.md](references/integrations.md), then [references/google-ads.md](references/google-ads.md).
 - Connect Google Docs or build Get Document or Insert Text nodes: read [references/integrations.md](references/integrations.md), then [references/google-docs.md](references/google-docs.md).
 - Connect Google BigQuery or build List Tables or Insert Rows nodes: read [references/integrations.md](references/integrations.md), then [references/google-bigquery.md](references/google-bigquery.md).
-- Connect Outlook or build mail, draft, attachment, or new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
+- Connect Outlook, send or reply with attachments, prepare an unsent reply draft in the original thread, or build new-email nodes: read [references/integrations.md](references/integrations.md), then [references/outlook.md](references/outlook.md).
 - Set up Facebook Lead Ads for an external user, connect an account, or build a New Lead trigger: read [references/facebook-lead-ads.md](references/facebook-lead-ads.md). Select the permitted Meta app first, then its account, Page, and Forms.
 - Create a workflow: call `POST /workflows/` with a complete JSON definition and acknowledged automatic service effects.
 - Create an agent: call `POST /workflows/` the same way with `"kind": "agent"` and an `AGENT` or `AGENT_ADVANCED` node as its agent step. Without `kind`, the new group is a workflow.
