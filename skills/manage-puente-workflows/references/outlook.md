@@ -7,7 +7,9 @@
 - Shared inputs and message output
 - Read messages and folders
 - Send email and manage drafts
-- Reply, forward, and move
+- Outbound attachments
+- Reply in the original thread
+- Forward and move
 - Read and download attachments
 - New email trigger
 - Recover from errors
@@ -38,6 +40,7 @@ Inputs reject extra properties. Outlook uses Microsoft Graph v1.0; do not add
 | `outlook.update_draft` | Yes | No |
 | `outlook.send_draft` | Yes | No |
 | `outlook.reply_email` | Yes | No |
+| `outlook.create_reply_draft` | Yes | No |
 | `outlook.forward_email` | Yes | No |
 | `outlook.move_message` | Yes | No |
 | `outlook.new_email` | Trigger; see below | No |
@@ -104,7 +107,8 @@ Use expressions only where live field metadata sets `supports_references: true`.
 Follow [nodes.md](nodes.md) for the saved context key. A message result is nested:
 use `{{read_message.message.message_id}}`, not `{{read_message.message_id}}`.
 
-Get, create-draft, update-draft, move, and new-email outputs contain `message`.
+Get, create-draft, create-reply-draft, update-draft, move, and new-email outputs
+contain `message`.
 List output contains `messages`. Each normalized message has `message_id`,
 `subject`, nullable `body`, `body_preview`, nullable `sender`, `to_recipients`,
 `cc_recipients`, `bcc_recipients`, nullable `received_at`, `sent_at`,
@@ -179,12 +183,15 @@ An empty first page does not establish absence from the entire mailbox.
 | `body_type` | `text` or `html`; default `text` |
 | `workflow_file_ids` | Array of at most 10 Puente file UUIDs; default `[]` |
 
-Do not copy Gmail's `text/plain`, `text/html`, `reply_to`, or URL-based
-`attachments` input into Outlook nodes. `body_type` does not support expressions.
-Files must exist, be unexpired, and belong to the same company and team. Each
-outbound attachment must be smaller than 3,000,000 bytes. The complete encoded
-JSON request must be smaller than 4,000,000 bytes; base64 encoding adds size.
-Ten individually valid files can still exceed the request limit.
+`outlook.send_email` also accepts `attachments`, default `[]`, using the same
+JSON format as Gmail; see [Outbound attachments](#outbound-attachments).
+It can combine `workflow_file_ids` and `attachments`; workflow files come first.
+`outlook.create_draft` accepts only `workflow_file_ids` for attachments.
+
+Use Outlook's `text` or `html` for `body_type`, not Gmail's `text/plain` or
+`text/html`. Do not add `reply_to`. `body_type` does not support expressions.
+Workflow files must exist, be unexpired, and belong to the same company and
+team. All outbound files remain subject to the size limits below.
 
 Create Draft returns `message`; it does not send. Send Email saves a sent copy
 and returns only `{"accepted":true}`. There is no returned sent-message ID.
@@ -200,11 +207,12 @@ action cannot change attachments and rejects a message that is not a draft.
 It returns the updated `message`.
 
 `outlook.send_draft` requires `connection_id` and the draft's `message_id`.
-It rejects non-drafts and returns only `{"accepted":true}`.
+It rejects non-drafts and returns only `{"accepted":true}`. It sends the files
+already attached to that draft; it does not accept an `attachments` input.
 
 ```json
 {
-  "label": "prepare_reply",
+  "label": "prepare_message",
   "node_id": "outlook.create_draft",
   "inputs": {
     "connection_id": "11111111-1111-4111-8111-111111111111",
@@ -212,7 +220,7 @@ It rejects non-drafts and returns only `{"accepted":true}`.
     "subject": "Your report",
     "body": "The report is attached.",
     "body_type": "text",
-    "workflow_file_ids": ["{{download_report.workflow_file.file_id}}"]
+    "workflow_file_ids": ["{{download_report_2.workflow_file.file_id}}"]
   },
   "on_error": "stop",
   "index_position": 3
@@ -220,17 +228,110 @@ It rejects non-drafts and returns only `{"accepted":true}`.
 ```
 
 For a later Send Draft node, set `message_id` to
-`{{prepare_reply.message.message_id}}` and connect the nodes with an edge.
+`{{prepare_message_3.message.message_id}}` and connect the nodes with an edge.
 This is an authoring example, not authorization to send an email.
 
-## Reply, forward, and move
+## Outbound attachments
 
-All three require `connection_id` and `message_id`.
+`outlook.send_email`, `outlook.reply_email`, and `outlook.create_reply_draft`
+accept an optional `attachments` array, default `[]`. Each item requires `name`
+(a safe filename, 1–255 characters) and `attachment`. Use either:
 
-- `outlook.reply_email` also requires `body` (1–512,000 characters). Optional
-  `body_type` is `text` or `html`, default `text`; `reply_mode` is `sender` or
-  `all`, default `sender`. These dropdown fields do not support expressions.
-  It sends the reply and returns only `{"accepted":true}`.
+- A public HTTPS file URL that the backend can fetch without custom headers or
+  authentication. Do not use a private-network URL or the protected Puente
+  `workflow_file.file_url` route.
+- An object with raw `base64` and `mime_type`. Optional `filename` and
+  `size_bytes` describe that content; they do not override size validation.
+  Do not include a `data:` prefix. The MIME type must match the actual file.
+
+```json
+[
+  {"name": "report.pdf", "attachment": "https://files.example.com/report.pdf"},
+  {
+    "name": "note.txt",
+    "attachment": {
+      "base64": "SGVsbG8=",
+      "mime_type": "text/plain",
+      "filename": "note.txt",
+      "size_bytes": 5
+    }
+  }
+]
+```
+
+Replace example URLs with real file URLs supplied by the user or earlier nodes.
+The `attachments` field supports workflow references, including a reference to
+an entire array from a code node. Follow [nodes.md](nodes.md) for context keys.
+Use the same input format as Gmail, but keep Outlook's own size limits:
+
+- Each outbound file must be smaller than 3,000,000 bytes.
+- The encoded request, including body, attachment metadata, and base64 content,
+  must be smaller than 4,000,000 bytes. For reply drafts, the combined body and
+  attachments are checked before the draft is created.
+- Base64 adds size. Several individually valid files can exceed the total.
+
+Large-file upload sessions are not supported. Create Reply Draft has the same
+limits; it does not provide a large-file upload path. Do not copy `attachments`
+into Create Draft, Update Draft, Forward Email, or Send Draft; those actions do
+not accept that field.
+
+## Reply in the original thread
+
+Choose the action from the user's requested result:
+
+| Result | Node | Output |
+|---|---|---|
+| Send a reply immediately, with optional attachments | `outlook.reply_email` | `{"accepted":true}` |
+| Leave an unsent reply in the original thread, with optional attachments | `outlook.create_reply_draft` | `message`, including the draft's `message_id` and `conversation_id` |
+| Send a previously prepared draft with its existing attachments | `outlook.send_draft` | `{"accepted":true}` |
+
+Reply Email and Create Reply Draft require `connection_id`, the original
+`message_id`, and `body` (1–512,000 characters). Both accept `body_type`
+(`text` or `html`, default `text`), `reply_mode` (`sender` or `all`, default
+`sender`), and `attachments`. The two dropdown fields do not support
+expressions. `reply_mode: "all"` replies to all original recipients.
+
+Use a message ID from the selected Outlook mailbox, such as a Get Message or
+New Email output. Do not replace it with a Gmail thread ID, `conversation_id`,
+or internet `Message-ID`. These reply actions preserve the original Outlook
+thread. Create Draft composes a new message and is not a substitute for Create
+Reply Draft.
+
+```json
+{
+  "label": "prepare_reply",
+  "node_id": "outlook.create_reply_draft",
+  "inputs": {
+    "connection_id": "11111111-1111-4111-8111-111111111111",
+    "message_id": "{{read_message_1.message.message_id}}",
+    "body": "The report is attached.",
+    "body_type": "text",
+    "reply_mode": "sender",
+    "attachments": [
+      {"name": "report.pdf", "attachment": "https://files.example.com/report.pdf"}
+    ]
+  },
+  "on_error": "stop",
+  "index_position": 3
+}
+```
+
+This example leaves the reply unsent (`message.is_draft: true`). For an
+immediate reply, use `outlook.reply_email` with the same inputs and expect only
+`accepted`, not a `message` result. Do not add a Send Draft node after it.
+
+For a later send after Create Reply Draft, add `outlook.send_draft` with the
+same literal connection UUID and `message_id` set to
+`{{prepare_reply_3.message.message_id}}`. Connect `prepare_reply_3` to that
+node using the edge format in [nodes.md](nodes.md). This sends in the original
+thread with the files already attached. Without a separate review or wait
+mechanism, adjacent draft and send nodes do not provide a human review pause.
+Do not add the send node when the user requests only an unsent draft.
+
+## Forward and move
+
+Both actions require `connection_id` and `message_id`.
+
 - `outlook.forward_email` also requires `to` (1–100 valid email addresses).
   Optional `comment` defaults to an empty string and permits at most 512,000
   characters. It sends the forward and returns only `{"accepted":true}`.
@@ -318,6 +419,10 @@ Preserve HTTP status and returned detail. Read [errors.md](errors.md) and
 - `file_not_found`: check the Puente file's company, team, and expiry.
 - `unsupported_file_type`, `file_too_large`, or `input_too_large`: check the
   attachment type and the separate download and outbound limits above.
+- A reply-preparation failure can report that a draft was created and left
+  unsent, with its message ID. It may have an incomplete body or attachments.
+  Preserve that ID and ask the user to inspect the draft before retrying or
+  sending it; do not create another draft automatically.
 - `rate_limited`: preserve retry information and let the user choose when to
   retry. This skill cannot run the node.
 - `outcome_unknown`: Microsoft may already have accepted the operation. Stop;
