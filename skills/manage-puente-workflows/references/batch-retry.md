@@ -1,5 +1,7 @@
 # Retry a batch of failed executions
 
+For a newer saved definition, use [continuation.md](continuation.md). The retry strategies below always use the source's original version. A source version filter is not a target version.
+
 Use this procedure for a user-requested retry of several existing failed executions. Diagnosis and selection alone do not authorize execution. Use the dedicated batch API; do not loop over single retry requests. Agents can inspect eligibility, exclusions, batch IDs, progress, and linked results even when the frontend does not show a batch summary.
 
 ## Contents
@@ -39,7 +41,7 @@ For optional daily counts:
 GET /workflows/{scenario_id}/retry-batches/calendar?since=<offset-timestamp>&until=<offset-timestamp>&timezone=America%2FSantiago&version=1
 ```
 
-`since`, `until`, and an IANA `timezone` are required. The window cannot exceed 93 days. Other candidate filters are accepted. The response is an array of `{day, count}`. Counts describe failed records; they do not establish retry eligibility. Use the review result for eligibility.
+`since`, `until`, and an IANA `timezone` are required. The window cannot exceed 93 days. Other candidate filters are accepted. The response is an array of `{day, count, versions}` on current deployments. Older deployments can omit `versions`; missing metadata does not mean that no versions exist. Counts describe failed records; they do not establish retry eligibility. Use the review result for eligibility.
 
 ## Freeze and inspect the batch
 
@@ -120,3 +122,7 @@ Report actual counts and exclusions. `failed` is a failed retry, while `skipped`
 - `404`: unavailable workflow or batch within this company, team, workflow group, and operator scope; do not probe other identities.
 - `422`: invalid filters, timestamps, timezone, range, strategy, confirmation body, or mixed original versions. Correct the request before a new authorized attempt.
 - Missing methods or unavailable retry preparation: report deployment or runtime availability separately from authentication. Never change the configured environment by inference.
+
+## Saved input expiry
+
+Retries and continuations require unexpired saved inputs. Visible execution history or node output does not prove that replay data remains available. Review and worker preparation both check eligibility; an item can become skipped after review if its inputs expire. Report the returned reason and actual counts. Do not alter execution timestamps, create replacement inputs, or repeat another action to bypass expiry. Ask the service operator about the effective retention policy when needed. Increasing retention cannot restore deleted inputs.

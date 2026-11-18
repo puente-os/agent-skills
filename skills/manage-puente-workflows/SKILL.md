@@ -1,11 +1,11 @@
 ---
 name: manage-puente-workflows
-description: Manage Puente workflows and agents with a Puente Studio credential. Use to inspect or version definitions, change saved status or kind, configure connection-backed integrations, write Python or headless browser code nodes and field formulas, diagnose workflow errors from execution history, or retry one failed execution or a batch from the failed step or from the start when the configured API supports it. Disclose automatic webhook and scheduling effects, require explicit activation confirmation, and obtain authorization for the selected retry strategy and possible duplicate effects.
+description: Manage Puente workflows and agents with a Puente Studio credential. Use to inspect or version definitions, change saved status or kind, configure connection-backed integrations, write Python or headless browser code nodes and field formulas, diagnose workflow errors from execution history, or retry one failed execution or a batch from the failed step or from the start, or continue saved executions on a newer version when the configured API supports it. Disclose automatic webhook and scheduling effects, require explicit activation confirmation, and obtain authorization for the selected retry strategy and possible duplicate effects.
 ---
 
 # Manage Puente Workflows
 
-Manage saved workflow definitions, including agents, and retry failed executions for the team attached to the configured Studio credential. Use only the retry procedure below to start a linked execution. Do not call general run, trigger, webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
+Manage saved workflow definitions, including agents, and retry failed executions for the team attached to the configured Studio credential. Use only the retry or continuation procedures below to start a linked execution. Do not call general run, trigger, webhook, schedule, or deletion endpoints. Reading execution history and execution details is allowed for diagnosis. Account for lifecycle side effects performed automatically by the Puente API during definition writes.
 
 ## Diagnose a workflow error
 
@@ -18,6 +18,8 @@ When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list
 For a requested retry from the failed step or from the start, read [references/retry.md](references/retry.md). Use the configured Studio key with `X-API-Key` for eligibility, retry, and result reads; never request a user JWT. Check the configured API's availability and the selected execution's eligibility. Explain which steps will run and the possible duplicate effects, then obtain authorization for that execution and strategy unless the user has already given it with those effects understood. Send one retry request and verify the linked execution through execution-detail reads. Do not treat `202` as completion or retry another failure automatically.
 
 For a requested batch retry, read [references/batch-retry.md](references/batch-retry.md). Use the dedicated batch API rather than a loop of single retries. Keep each batch within one workflow and one original version. Inspect the frozen selection before submission, reuse existing authorization when sufficient, and track the returned batch ID and linked executions. Batch status remains available to agents even when the frontend returns to ordinary history.
+
+For a requested continuation on a newer saved version, read [references/continuation.md](references/continuation.md). Keep the source version filter separate from the target version to execute. Review the server's reuse plan, submit the authorized selection, and verify linked executions and provenance. Continuation has its own API; it is not a retry strategy.
 
 ## Agents are workflows
 
@@ -136,7 +138,7 @@ corresponding URL could not be derived instead of guessing.
 
 ## Distinguish management from execution
 
-Use execution-history reads for diagnosis and the dedicated retry routes for an authorized retry of an existing failed execution. Do not call general execution-start, trigger, webhook, cron, schedule, or run endpoints. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
+Use execution-history reads for diagnosis and the dedicated retry or continuation routes for an authorized operation on saved executions. Do not call general execution-start, trigger, webhook, cron, schedule, or run endpoints. The Puente API manages schedules from definition writes, including those made with a Studio credential, so no separate cron call is needed.
 
 Definition management can still change runtime eligibility:
 
