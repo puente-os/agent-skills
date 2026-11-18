@@ -75,7 +75,7 @@ to full restart without authorization for the different scope.
 Both strategies use the original saved workflow version and inputs. A new
 definition version, changed node code, or corrected input does not replace
 that snapshot. If the user expects a later definition fix to run, explain this
-limit and stop this retry procedure.
+limit and use [continuation.md](continuation.md) for an authorized continuation on a newer saved version.
 
 ## Authorize and submit one retry
 
