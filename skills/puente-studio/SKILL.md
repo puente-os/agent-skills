@@ -1199,6 +1199,34 @@ node <skill-directory>/scripts/pull_artefacto.js {id}  # descarga a app/files/
 
 ---
 
+## ⏱️ Rate limit del equipo (STUDIO_KEY)
+
+Todas las requests con `X-API-Key: {STUDIO_KEY}` (`puente_studio_*`) comparten un límite **por equipo**, que también consumen los crons del cliente:
+
+| Ventana | Límite |
+|---------|--------|
+| Segundo | 100 requests (máx. 100 a la vez) |
+| Hora | 15 000 requests |
+
+> El límite parte en modo solo registro y luego se aplica. Sigue estas reglas desde ya.
+
+Al excederlo, la API responde `429` con los headers `Retry-After` (segundos), `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` y este body:
+
+```json
+{ "detail": { "error": "Rate limit exceeded", "limit_type": "burst", "retry_after_seconds": 12 } }
+```
+
+`limit_type` es `"burst"` o `"hourly"`.
+
+**Reglas para requests, loops y scripts:**
+
+1. **`429` → esperar y reintentar.** Espera los segundos de `Retry-After` (o `detail.retry_after_seconds`) y reintenta la misma request. Tras 3 intentos con `429`, detente e informa al usuario qué se completó y desde qué fila o paso retomar.
+2. **Nunca reintentes otros `4xx`** (`400`, `401`, `403`, `404`, `422`): repetir da el mismo error. Corrige la causa o detente.
+3. **Bulk para escribir muchas filas.** Usa `POST /studio/tablas/{tabla_id}/datos/bulk` (hasta 10 000 filas por request) en vez de un `POST` o `PUT` por fila. No hay bulk de actualización: si necesitas muchos `PUT` por fila, cuenta las requests antes de empezar y aplica la regla 4.
+4. **Máximo 4 requests concurrentes por script**, sumando hilos, procesos y promesas. Cada request tarda ~100–300 ms, así que 4 en paralelo ≈ ≤40 req/s y deja margen a los crons del cliente.
+
+---
+
 ## Reglas de comportamiento del agente
 
 1. **No crear Claude Artifacts** — usa archivos normales del proyecto o `app_content`. “Artefacto” siempre significa una app de Puente.
@@ -1211,6 +1239,8 @@ node <skill-directory>/scripts/pull_artefacto.js {id}  # descarga a app/files/
 8. **Usar `/meta` para el link público** — cuando el usuario pida el link o URL de una app, usa SIEMPRE `GET /studio/artefactos/group/{group_id}/meta` o `GET /studio/artefactos/{id}/meta` para obtener el `public_id` y construir `https://app.puente.xyz/public/{public_id}/`. Nunca uses el GET completo del artefacto solo para esto.
 9. **Pushear siempre por `group_id`** — el único endpoint de actualización de `app_content` es `PUT /studio/artefactos/group/{group_id}`. Nunca uses el `id` numérico para pushes, ya que cambia con cada versión nueva. El `group_id` es estable para siempre. Ese mismo endpoint también cambia `titulo` y `descripcion` sin versionar si lo llamas sin `app_content`; la única excepción que exige el `id` numérico es `PUT /studio/artefactos/{id}/meta` para `slug` y `sharing_mode`, y ahí debes resolver el `id` vigente justo antes de llamarlo.
 10. **Reportar y guardar el `group_id`** — al crear un artefacto, muestra el `artefacto_group_id` al usuario e indícale que lo guarde. Es el identificador que necesitará para todos los pushes futuros.
+11. **No mostrar API keys** — nunca escribas la `STUDIO_KEY` ni keys `puente_artifact_*` en respuestas, logs o comandos visibles; referencia la variable (`-H "X-API-Key: $STUDIO_KEY"`). Única excepción: la key recién regenerada de la regla 5, que se muestra una sola vez.
+12. **Respetar el rate limit** — sigue las reglas de "Rate limit del equipo (STUDIO_KEY)": reintenta solo `429` según `Retry-After`, usa bulk y no más de 4 requests concurrentes.
 
 ---
 
@@ -1234,6 +1264,7 @@ node <skill-directory>/scripts/pull_artefacto.js {id}  # descarga a app/files/
 | `404` | Recurso no existe en tu equipo | Verifica el ID con el endpoint de listado |
 | `422` | Campo con formato incorrecto | Lee el mensaje — indica exactamente qué campo falló |
 | `403` | Sin créditos | Contactar al administrador de la cuenta |
+| `429` | Rate limit del equipo excedido (`limit_type`: `burst` u `hourly`) | Esperar `Retry-After` segundos y reintentar; tras 3 intentos, detenerse e informar desde dónde retomar |
 
 ### Errores con API Key de artefacto (endpoints públicos)
 
