@@ -10,7 +10,7 @@ the user's run.
 | Category | Names or messages |
 | --- | --- |
 | Data limits | `payload_limit_exceeded`, `IteratorContextTooLarge`, `ResultTooLarge`, `ContextTooLarge`, `InvalidResult` |
-| Execution time | `ExecutionTimeout`, `PythonExecutionTimeout`, `RunDeadlineExceeded` |
+| Execution time | `ExecutionTimeout`, `PythonExecutionTimeout`, `ExecutionDeadlineExceeded`, `RunDeadlineExceeded` |
 | Workflow code | Custom Python exceptions, including `RuntimeError`; `ScriptSyntaxError`, `ScriptExitError` |
 | Browser resources | `OutOfMemory`, `BrowserCrashed` |
 | Unknown outcome | `OutcomeUnknown`, `NodeExecutionInterrupted`, `execution_outcome_unknown` |
@@ -47,6 +47,14 @@ explicit error message for a numeric limit; a merged change may not be deployed.
 - **Contact Puente:** The error persists with a small context. Supply the size and limit from the message.
 
 ## Execution time
+
+### `ExecutionDeadlineExceeded`
+
+- **Meaning:** The workflow reached its execution deadline. This is separate from a single Python node's timeout.
+- **Causes:** The run exceeded its configured budget, or a synchronous webhook imposed its shorter 5-minute deadline. An early response node does not remove that deadline from an admitted Restate run. The error name alone does not establish which limit applied.
+- **Fix:** Check the original saved version, engine, trigger, responder nodes, and elapsed time. Follow [webhooks.md](webhooks.md) for response modes and limits. If the caller only needs acceptance, convert the definition to async with authorization; if it needs a computed response, keep sync and reduce the work within its deadline.
+- **Retry:** Inspect completed external actions first. A definition change affects future requests; an ordinary retry uses the original version. Use the separate continuation procedure when an authorized execution must use a newer version.
+- **Contact Puente:** The deadline does not match the target environment's configuration, or the execution history cannot establish its cause.
 
 ### `ExecutionTimeout` / `PythonExecutionTimeout`
 

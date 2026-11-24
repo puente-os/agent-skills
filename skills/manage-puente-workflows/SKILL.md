@@ -13,6 +13,10 @@ For a failed or stuck workflow, read [references/troubleshooting.md](references/
 
 When `BASE_URL` and `STUDIO_KEY` are available, read the evidence yourself: list the workflow's recent executions, then read the failed or stuck execution in detail. Follow the read-only execution history contract in [references/api.md](references/api.md#execution-history). Without configuration, interpret the error details the user supplies. Diagnosis alone does not authorize a retry.
 
+## Webhook response mode
+
+For webhook setup, sync/async conversion, or a webhook deadline failure, read [references/webhooks.md](references/webhooks.md). A `WEBHOOK_RESPONDER` node selects synchronous mode, even when it sends an early acknowledgement. A workflow without a responder uses asynchronous acceptance. The `sync_webhook_id` field names the endpoint; it does not select the mode.
+
 ## Retry failed executions
 
 For a requested retry from the failed step or from the start, read [references/retry.md](references/retry.md). Use the configured Studio key with `X-API-Key` for eligibility, retry, and result reads; never request a user JWT. Check the configured API's availability and the selected execution's eligibility. Explain which steps will run and the possible duplicate effects, then obtain authorization for that execution and strategy unless the user has already given it with those effects understood. Send one retry request and verify the linked execution through execution-detail reads. Do not treat `202` as completion or retry another failure automatically.
@@ -84,7 +88,7 @@ For any connection-backed integration, first read [references/integrations.md](r
 2. Validate every `node_id` through `GET /workflows/integrations`; never invent node types. When the request involves node-level code, inspect `GET /openapi.json` too: `script_code` is a persisted `WorkflowNode` field, not an integration `inputs` field.
 3. Preserve the complete `nodes` and `edges` arrays when creating a new version.
 4. Default new definitions and versions to `draft` unless the user explicitly requests another saved status.
-5. Explain that `POST /workflows/` automatically generates or inherits Puente synchronous-webhook metadata. This can expose a fixed Puente webhook endpoint even while the workflow remains a draft. Saving an active definition with a `trigger.schedule` node also creates or updates its schedule. Saving a `gmail.new_email` node can create or renew a Gmail watch even in draft; read [references/gmail.md](references/gmail.md). Saving an `outlook.new_email` node can create or renew a Microsoft subscription even in draft; read [references/outlook.md](references/outlook.md). Saving `facebook_lead_ads.new_lead` can add a Page lead subscription even in draft; read [references/facebook-lead-ads.md](references/facebook-lead-ads.md).
+5. Explain that `POST /workflows/` automatically generates or inherits Puente webhook metadata. This can expose a fixed Puente webhook endpoint even while the workflow remains a draft. Saving an active definition with a `trigger.schedule` node also creates or updates its schedule. Saving a `gmail.new_email` node can create or renew a Gmail watch even in draft; read [references/gmail.md](references/gmail.md). Saving an `outlook.new_email` node can create or renew a Microsoft subscription even in draft; read [references/outlook.md](references/outlook.md). Saving `facebook_lead_ads.new_lead` can add a Page lead subscription even in draft; read [references/facebook-lead-ads.md](references/facebook-lead-ads.md).
 6. Obtain explicit user confirmation of those effects before sending a create/version request.
 7. If any create/version payload uses `status: "active"`, obtain separate explicit confirmation of activation.
 8. Show the intended HTTP method, path, and JSON body without sending it when the requested change is ambiguous or needs confirmation.
@@ -146,7 +150,7 @@ Definition management can still change runtime eligibility:
 - Saving a `gmail.new_email` definition can create or renew a Gmail watch even in draft. Activation enables automatic execution for new Inbox mail; see [references/gmail.md](references/gmail.md).
 - Saving an `outlook.new_email` definition can create or renew a Microsoft subscription even in draft. Activating it enables automatic execution for new Inbox mail; see [references/outlook.md](references/outlook.md).
 - Saving a `facebook_lead_ads.new_lead` definition can add the app's Page `leadgen` subscription even in draft. Activating it enables automatic execution for matching leads; see [references/facebook-lead-ads.md](references/facebook-lead-ads.md).
-- Saving `status: "active"` does not execute immediately, but it enables existing external triggers or synchronous webhooks to execute that workflow. Saving or activating a definition with a `trigger.schedule` node creates or updates its schedule; see the schedule rules in [references/api.md](references/api.md).
+- Saving `status: "active"` does not execute immediately, but it enables existing external triggers or webhooks to execute that workflow. Saving or activating a definition with a `trigger.schedule` node creates or updates its schedule; see the schedule rules in [references/api.md](references/api.md).
 
 Require explicit user confirmation for every transition or create/version payload that saves an active status. Never describe activation as inert metadata.
 

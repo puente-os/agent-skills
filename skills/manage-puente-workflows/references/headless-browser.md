@@ -58,12 +58,17 @@ are not installed.
 | --- | --- |
 | Node result | 2 MiB (base64 adds about 33 % to an image) |
 | All node results in one run | 2 MiB |
-| Per node | 29 min |
-| Per workflow run | 35 min |
-| All iterator bodies together | 20 min |
+| Per browser node | Up to 55 min, shortened by the remaining run budget |
+| Restate workflow run | 65 min by default; a sync webhook can shorten it to 5 min |
+| Legacy workflow run | 35 min |
+| Legacy iterator bodies together | 20 min |
 | Synchronous webhook | 5 min |
 | **Ejecutar** button | 15 min |
 | Resources | 2 vCPU and 2 GiB of memory |
+
+Check the execution engine and target environment before promising these
+limits. Async acceptance does not remove node or workflow limits. Read
+[webhooks.md](webhooks.md) for sync/async behavior and the source of the defaults.
 
 A node that starts with less than a minute left in the run fails with
 `RunDeadlineExceeded` without opening the browser.
