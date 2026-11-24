@@ -205,8 +205,11 @@ The Puente service also:
 
 - generates a `sync_webhook_id` for a new workflow;
 - may persist a legacy `webhook_url` response field;
-- exposes its fixed synchronous webhook endpoint from the configured Puente API
-  origin even though this skill calls only the definition endpoint.
+- exposes its fixed webhook endpoint from the configured Puente API origin
+  even though this skill calls only the definition endpoint;
+- registers synchronous mode when the graph contains a `WEBHOOK_RESPONDER` node,
+  or asynchronous mode when it does not. Read [webhooks.md](webhooks.md) before
+  choosing or changing the response mode.
 
 Explain these effects and obtain explicit user confirmation before sending the request.
 
@@ -276,7 +279,7 @@ than the webhook endpoint.
 
 Use the saved version `id` of the latest version (`is_latest=true`). Any other version returns `409`; read the group again and use its latest `id`. Activating one version causes other active versions in the same group to become inactive.
 
-Activation does not run the workflow immediately. It does make the workflow eligible for execution through existing external triggers or synchronous webhooks, and it creates or updates the schedule of a `trigger.schedule` workflow. Require separate explicit user confirmation before saving `active`, including when `active` appears in a create/version payload.
+Activation does not run the workflow immediately. It does make the workflow eligible for execution through existing external triggers or webhooks, and it creates or updates the schedule of a `trigger.schedule` workflow. Require separate explicit user confirmation before saving `active`, including when `active` appears in a create/version payload.
 
 ## Execution history
 
